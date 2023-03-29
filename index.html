@@ -10,6 +10,7 @@
     <a-scene>
       <a-assets>
         <a-asset-items id="spaceship" src="assets/space_ship/spaceship.glb" />
+        <a-asset-items id="rflogo" src="assets/rflogo/spaceship.glb" />
         <img id="skyTexture" src="https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/71eeef2d-6d2f-4799-a0d0-469308125783/d6h6gkp-590c6916-43b9-40ff-a650-35518b849ce2.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzcxZWVlZjJkLTZkMmYtNDc5OS1hMGQwLTQ2OTMwODEyNTc4M1wvZDZoNmdrcC01OTBjNjkxNi00M2I5LTQwZmYtYTY1MC0zNTUxOGI4NDljZTIuanBnIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.IFVlxpzCKjJfKT5tXerSgTSddRxq8H81-SMIgkHZLU4" />
       </a-assets>
       <!-- workspace lights -->
@@ -42,6 +43,7 @@
         event-set__leave="_event: mouseleave; material.wireframe: false"
       ></a-plane>
       <a-entity gltf-model="#spaceship" position="0 0 0"> </a-entity>
+      <a-entity gltf-model="#rflgo" position="0 0 5"> </a-entity>
     </a-scene>
     <script>
       // Get the camera element
