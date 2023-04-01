@@ -18,11 +18,28 @@
         <a-asset-items id="t-rexaur-mtl" src="assets/psone/t-rexaur.mtl" />
         <a-asset-items id="Naruto-obj" src="assets/pstwo/Naruto.obj" />
         <a-asset-items id="Naruto-mtl" src="assets/pstwo/Naruto.mtl" />
+        <a-asset-items id="Tibbers Hextech-obj" src="assets/games/Tibbers Hextech.obj" />
+        <a-asset-items id="Tibbers Hextech-mtl" src="assets/games/Tibbers Hextech.mtl" />
+
+
       </a-assets>
-    
+      <a-light
+      type="ambient"
+      position="0 0 0"
+      rotation="0 0 0"
+      target="#directionaltarget"
+      intensity="1"
+      >
+      <a-light
+      type="point"
+      position="10 0 -50"
+      >
+
+    </a-light>
       <a-entity obj-model="obj: #Flutter-obj; mtl: #Flutter-mtl"  scale=".01 .01 .01" position="0 10 -15" rotation="0 90 0"></a-entity>
       <a-entity obj-model="obj: #Naruto-obj; mtl: #Naruto-mtl"   position="0 0 0" rotation="0 0 0"></a-entity>
       <a-entity obj-model="obj: #t-rexaur-obj; mtl: #t-rexaur-mtl"  scale=".001 .001 .001" position="0 0 -50" rotation="180 0 0"></a-entity>
+      <a-entity obj-model="obj: #Tibbers Hextech-obj; mtl: #Tibbers Hextech-mtl"   scale=".1 .1 .1"  position="15 0 -50" rotation="0 0 0"></a-entity>
 
       <!-- workspace lights -->
 
