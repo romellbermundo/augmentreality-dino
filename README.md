@@ -6,3 +6,4 @@ Installation:
 git clone
 npm i
 npm run start
+
