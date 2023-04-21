@@ -44,6 +44,7 @@
           id="cylindertexture"
           src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Snake_Skin_Texture_%283%29.jpg"
         />
+        <img id="brickwalltexture" src="assets/textures/brick-wall.png" />
       </a-assets>
 
       <a-entity
@@ -118,7 +119,19 @@
 
       <!-- workspace lights -->
 
-      <a-box position="9 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
+      <a-box
+        id="blue-box"
+        position="9 0.5 -3"
+        rotation="0 45 0"
+        color="#4CC3D9"
+      ></a-box>
+      <a-box
+        id="brick-box"
+        position="9 2.5 -3"
+        rotation="0 45 0"
+        color="#4CC3D9"
+        material="src:#brickwalltexture; roughness: 2; metalness: 0; color: #ffffff"
+      ></a-box>
       <a-sphere position="10 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
       <a-cylinder
         position="11 0.75 -3"
