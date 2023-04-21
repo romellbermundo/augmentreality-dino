@@ -21,8 +21,35 @@
         <a-asset-items id="Tibbers Hextech-obj" src="assets/games/Tibbers Hextech.obj" />
         <a-asset-items id="Tibbers Hextech-mtl" src="assets/games/Tibbers Hextech.mtl" />
 
+        <img id="spheretexture" src="https://upload.wikimedia.org/wikipedia/commons/1/14/Patriarchate_of_Pe%C4%87_Monastery_Chipped_Paint_-quinn.anya.jpg">
+        <img id="boxtexture" src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Snake_Skin_Texture_%283%29.jpg">
+      <img id="cylindertexture" src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Snake_Skin_Texture_%283%29.jpg">
+
 
       </a-assets>
+
+      <a-entity geometry="primitive: cylinder; heighht:2; radius:0.5; openEnded: true" 
+      position="2 0.75 -3" 
+      material="src:#cylindertexture; repeat: 2 1; side:double; color:#ffc65d"
+     event-set__enter="_event: mouseenter; material.color: #4CC3D9"
+     event-set__leave="_event: mouseleave; material.color::#ffc65d" ></a-entity>
+
+<a-sphere   
+position="0 1.5 -6" 
+radius="1.5" 
+color="#EF2D5E" 
+src="#spheretexture"
+event-set__enter="_event: mouseenter; color:#ffff99"
+event-set__leave="_event: mouseleave; color:#7a00cc"     >
+</a-sphere>
+
+<a-entity       
+ id="box" geometry="primitive: box; width: 1; depth: 1; height: 1"
+  position="-1.5 0.5 -2" 
+  rotation="0 45 0" 
+  material="src:#boxtexture; roughness: 2; metalness: 0; color: #4CC3D9"
+ event-set__enter="_event: mouseenter; rotation:10 30 0"
+ event-set__leave="_event: mouseleave; rotation:0 45 0"></a-entity>
       <a-light
       type="ambient"
       position="0 0 0"
@@ -64,12 +91,13 @@
       <a-entity gltf-model="#rflogo" position="0 0 5"> </a-entity>
       <!-- <a-entity gltf-model="assets/rflogo/rflogo.glb" position="0 0 -10"> </a-entity> -->
       <a-entity gltf-model="assets/game-assets/WonderWalls_SecondAge.gltf" scale="3 3 3" position="10 0 -10"> </a-entity>
-      <a-plane
+      <!-- <a-plane
       src="#groundTexture"
       rotation="-90 0 0"
       width="45"
       height="45"
-    ></a-plane>
+    ></a-plane> -->
+    
     </a-scene>
     <script>
       // Get the camera element
