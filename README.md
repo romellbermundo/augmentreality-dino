@@ -15,3 +15,7 @@ Technologies used:
 
 A-Frame
 Javascript
+
+Shortcuts:
+
+Visual Inspector - <ctrl> + <alt> + i or <ctrl> + <option> + i

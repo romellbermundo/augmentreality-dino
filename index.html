@@ -4,7 +4,9 @@
     <meta charset="utf-8">
     <title>Hello, World! - A-Frame</title>
     <meta name="description" content="Hello, World! - A-Frame">
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@3.0.3/dist/aframe-event-set-component.min.js"></script>
   </head>
   <body>
     <a-scene loading-screen="dotsColor: red; backgroundColor: black">
@@ -97,8 +99,12 @@ event-set__leave="_event: mouseleave; color:#7a00cc"     >
       width="45"
       height="45"
     ></a-plane> -->
-    
+    <a-camera>
+      <a-cursor></a-cursor>
+    </a-camera>
     </a-scene>
+
+    
     <script>
       // Get the camera element
       const camera = document.querySelector('#camera');
