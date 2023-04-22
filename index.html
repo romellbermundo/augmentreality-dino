@@ -23,6 +23,7 @@
         <a-asset-items id="t-rexaur-mtl" src="assets/psone/t-rexaur.mtl" />
         <a-asset-items id="Naruto-obj" src="assets/pstwo/Naruto.obj" />
         <a-asset-items id="Naruto-mtl" src="assets/pstwo/Naruto.mtl" />
+        <a-asset-items id="floor" src="assets/textures/wood-floor.jpg" />
         <a-asset-items
           id="Tibbers Hextech-obj"
           src="assets/games/Tibbers Hextech.obj"
@@ -152,12 +153,8 @@
       <a-plane
         position="0 .1 -4"
         rotation="-90 0 0"
-        width="4"
-        height="4"
-        color="#7BC8A4"
-        event-set__down="_event: mousedown; material.wireframe: true"
-        event-set__up="_event: mouseup; material.wireframe: false"
-        event-set__leave="_event: mouseleave; material.wireframe: false"
+        material="color: #FFFFFF; src: #floor; repeat: 5 5"
+        scale="10 10 1"
       ></a-plane>
       <!-- <a-entity gltf-model="#spaceship" position="0 0 0"> </a-entity> -->
       <a-entity gltf-model="#rflogo" position="0 0 5"> </a-entity>
