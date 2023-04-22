@@ -86,14 +86,14 @@
         event-set__enter="_event: mouseenter; rotation:10 30 0"
         event-set__leave="_event: mouseleave; rotation:0 45 0"
       ></a-entity>
-      <a-light
+      <!-- <a-light
         type="ambient"
         position="0 0 0"
         rotation="0 0 0"
         target="#directionaltarget"
         intensity="1"
       ></a-light>
-      <a-light type="point" position="10 0 -50"></a-light>
+      <a-light type="point" position="10 0 -50"></a-light> -->
       <a-entity
         obj-model="obj: #Flutter-obj; mtl: #Flutter-mtl"
         scale=".01 .01 .01"
@@ -112,7 +112,7 @@
         rotation="180 0 0"
       ></a-entity>
       <a-entity
-        obj-model="obj: #Tibbers Hextech-obj; mtl: #Tibbers Hextech-mtl"
+        obj-model="obj: #Tibbers Hextech-obj; mtl: #Tibbers Hextech-mtl;shader: standard"
         scale=".1 .1 .1"
         position="15 0 -50"
         rotation="0 0 0"
@@ -156,6 +156,14 @@
         material="color: #FFFFFF; src: #floor; repeat: 5 5"
         scale="10 10 1"
       ></a-plane>
+
+      <!-- infinite plane -->
+      <!-- <a-plane
+        position="0 .1 -4"
+        rotation="-90 0 0"
+        material="color: #FFFFFF; src: #floor; repeat: 5000 5000"
+        scale="10000 10000 1"
+      ></a-plane> -->
       <!-- <a-entity gltf-model="#spaceship" position="0 0 0"> </a-entity> -->
       <a-entity gltf-model="#rflogo" position="0 0 5"> </a-entity>
       <!-- <a-entity gltf-model="assets/rflogo/rflogo.glb" position="0 0 -10"> </a-entity> -->
