@@ -21,6 +21,10 @@
         <a-asset-items id="Flutter-mtl" src="assets/psone/Flutter.mtl" />
         <a-asset-items id="t-rexaur-obj" src="assets/psone/t-rexaur.obj" />
         <a-asset-items id="t-rexaur-mtl" src="assets/psone/t-rexaur.mtl" />
+        <a-asset-item
+          id="Model"
+          src="https://cdn.glitch.global/bb58ccfe-3d8a-4c60-ba56-8f0546d8f6d5/mecha.glb?v=1681176859257"
+        ></a-asset-item>
         <a-asset-items id="Naruto-obj" src="assets/pstwo/Naruto.obj" />
         <a-asset-items id="Naruto-mtl" src="assets/pstwo/Naruto.mtl" />
         <a-asset-items id="floor" src="assets/textures/wood-floor.jpg" />
@@ -67,6 +71,12 @@
         radius-tubular="0.2"
       ></a-torus>
       <a-sphere position="-10 10 -20" color="yellow" radius="2"></a-sphere>
+
+      <a-entity
+        gltf-model="#Model"
+        modify-materials
+        position="-10 4 -6"
+      ></a-entity>
 
       <a-sphere
         position="0 1.5 -6"
