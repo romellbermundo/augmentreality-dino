@@ -183,7 +183,7 @@
           height="4"
           color="#D8FFF9"
         ></a-plane>
-        /* Brazo derecho*\
+
         <a-cylinder
           position="1 2.3 -2"
           radius="0.08"
@@ -212,7 +212,7 @@
           color="#544237"
           rotation="0 0 -90"
         ></a-cylinder>
-        /* Brazo izquierdo*\
+
         <a-cylinder
           position="-1 2.3 -2"
           radius="0.08"
@@ -241,7 +241,7 @@
           color="#544237"
           rotation="0 0 -90"
         ></a-cylinder>
-        /* Ojos del muñeco*/
+
         <a-sphere
           position="0.15 2.6 -1.5"
           radius="0.03"
@@ -252,7 +252,7 @@
           radius="0.03"
           color="#242222"
         ></a-sphere>
-        /*Nariz del muñeco*/
+
         <a-cone
           position="0 2.5 -1.5"
           radius-bottom="0.08"
@@ -261,7 +261,7 @@
           color="orange"
           rotation="90 0 0"
         ></a-cone>
-        /*Sombrero del muñeco*/
+
         <a-cylinder
           position="0 2.8 -1.7"
           radius="0.4"
@@ -275,7 +275,7 @@
           height="0.4"
           color="black"
         ></a-cone>
-        /*Boca del muñeco*/
+
         <a-sphere
           position="0.1 2.4 -1.5"
           radius="0.01"
@@ -301,7 +301,7 @@
           radius="0.01"
           color="#f00a0a"
         ></a-sphere>
-        /*Puntos cuerpo*/
+        s
         <a-sphere position="0 2.1 -1.3" radius="0.03" color="black"></a-sphere>
         <a-sphere position="0 1.9 -1.3" radius="0.03" color="black"></a-sphere>
         <a-sphere position="0 1.7 -1.3" radius="0.03" color="black"></a-sphere>
@@ -629,6 +629,29 @@
       width="45"
       height="45"
     ></a-plane> -->
+
+      <a-box
+        position="-1 1.6 -5"
+        animation="property: position; to: 1 8 -10; dur: 2000; easing: linear; loop: true"
+        color="tomato"
+      >
+      </a-box>
+
+      <a-box
+        position="-1 1.6 -5"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"
+        color="tomato"
+        a
+      >
+      </a-box>
+      <a-box
+        position="-2 1.6 -5"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"
+        animation__2="property: position; to: -a1 8 -10; dur: 2000; easing: linear; loop: true"
+        color="tomato"
+        a
+      >
+      </a-box>
 
       <a-curvedimage
         src="#brickwalltexture"
