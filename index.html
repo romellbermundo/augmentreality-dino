@@ -6,6 +6,7 @@
     <meta name="description" content="Hello, World! - A-Frame" />
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-event-set-component@3.0.3/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.0/howler.core.min.js"></script>
   </head>
   <body>
     <a-scene loading-screen="dotsColor: red; backgroundColor: black">
@@ -638,11 +639,39 @@
         rotation="0 90 0"
       >
       </a-curvedimage>
+      <a-sphere
+        id="red-sphere"
+        radius="1"
+        position="-5 1.6 -2"
+        color="#F00"
+        cursor-listener
+      ></a-sphere>
       <a-camera>
         <a-cursor></a-cursor>
       </a-camera>
     </a-scene>
+    <script>
+      const redSphere = document.getElementById("red-sphere");
+      const audioStreamUrl = "https://supersoul.live:8000/OSS128kbps";
+      let audioPlayer;
+      let audioPlaying = false;
 
+      redSphere.addEventListener("click", () => {
+        if (audioPlaying) {
+          audioPlayer.stop();
+          audioPlaying = false;
+        } else {
+          audioPlayer = new Howl({
+            src: [audioStreamUrl],
+            html5: true,
+            format: ["mp3", "aac"],
+            volume: 1,
+          });
+          audioPlayer.play();
+          audioPlaying = true;
+        }
+      });
+    </script>
     <script>
       // Get the camera element
       const camera = document.querySelector("#camera");
