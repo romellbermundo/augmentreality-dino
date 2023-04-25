@@ -669,6 +669,13 @@
         color="#F00"
         cursor-listener
       ></a-sphere>
+      <a-sphere
+        id="white-sphere"
+        radius="1"
+        position="-15 1.6 -2"
+        color="#F00"
+        cursor-listener
+      ></a-sphere>
       <a-camera>
         <a-cursor></a-cursor>
       </a-camera>
@@ -692,6 +699,28 @@
           });
           audioPlayer.play();
           audioPlaying = true;
+        }
+      });
+    </script>
+    <script>
+      const whiteSphere = document.getElementById("white-sphere");
+      const audioStreamUrl2 = "assets/music/ff7-battle.mp3";
+      let audioPlayer2;
+      let audioPlaying2 = false;
+
+      whiteSphere.addEventListener("click", () => {
+        if (audioPlaying2) {
+          audioPlayer2.stop();
+          audioPlaying2 = false;
+        } else {
+          audioPlayer2 = new Howl({
+            src: [audioStreamUrl2],
+            html5: true,
+            format: ["mp3", "aac"],
+            volume: 1,
+          });
+          audioPlayer2.play();
+          audioPlaying2 = true;
         }
       });
     </script>
