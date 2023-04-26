@@ -4,7 +4,7 @@ Augmented Reality Test Repository
 
 Introduction:
 
-3D world with all experimental things to have fun.
+3D world with all experimental things to play and have fun.
 
 Installation:
 
