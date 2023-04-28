@@ -677,17 +677,24 @@
         cursor-listener
       ></a-sphere>
       <a-entity>
-        <a-box
-          id="box"
-          color="AA0000"
-          position="-2 0 7"
-          event-set__enter="_event:
-        mouseenter; material.color: #FF0000"
-          event-set__leave="_event:
-        mouseleave; material.color: #AA0000"
-          event-set__tarcol="_event: click;
-        _target: #green; material.color: #00AAFF"
-        ></a-box>
+        <a-box color="#AA0000" position="-2 0 7" 
+        event-set__enter="_event: mouseenter; material.color: #FF0000"
+        event-set__leave="_event: mouseleave; material.color: #AA0000"
+        event-set__tarcol="_event: click; _target: #green; material.color: #00AAFF"></a-box>
+        <a-box color="#00AA00" position="-2 3 7" 
+        event-set__rescol="_event: click; material.color: #AA0000"></a-box>
+        <a-box color="#AA0000" position="0 0 7" 
+        event-set__enter="_event: mouseenter; material.color: #FF0000"
+        event-set__leave="_event: mouseleave; material.color: #AA0000"
+        event-set__tarvis="_event: click; _target: #blue; visible: true"></a-box>
+        <a-box color="#0000AA" position="0 3 7" 
+        event-set__resvis="_event: click;"></a-box>
+        <a-box color="#AA0000" position="2 0 7" 
+        event-set__enter="_event: mouseenter; material.color: #FF0000"
+        event-set__leave="_event: mouseleave; material.color: #AA0000"
+        event-set__tarpos="_event: click; _target: #yellow; position: 2 3 -5"></a-box>
+        <a-box color="#FFAA00" position="2 3 7" 
+        event-set__respos="_event: click; "></a-box>
       </a-entity>
       <a-camera>
         <a-cursor></a-cursor>
