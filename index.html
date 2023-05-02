@@ -61,7 +61,7 @@
         event-set__enter="_event: mouseenter; material.color: #4CC3D9"
         event-set__leave="_event: mouseleave; material.color::#ffc65d"
       ></a-entity>
-
+      <a-box id="myBox" position="0 1 -5" rotation="0 45 0" color="#4CC3D9"></a-box>
       <a-torus
         id="rosca"
         rotation="0 0 0"
@@ -728,6 +728,17 @@
         }
       });
     </script>
+      <script>
+        document.addEventListener("DOMContentLoaded", function() {
+          const box = document.querySelector("#myBox");
+          box.addEventListener("click", function() {
+            const randomX = Math.floor(Math.random() * 6) - 3;
+            const randomY = Math.floor(Math.random() * 6) - 3;
+            const randomZ = Math.floor(Math.random() * 6) - 8;
+            box.setAttribute("position", {x: randomX, y: randomY, z: randomZ});
+          });
+        });
+      </script>
     <script>
       const whiteSphere = document.getElementById("white-sphere");
       const audioStreamUrl2 = "assets/music/ff7-battle.mp3";
