@@ -5,6 +5,7 @@ Augmented Reality Test Repository
 Introduction:
 
 3D world with all experimental things to play and have fun.
+You can interact with objects in the world. Sound effects and animations :D.
 
 Installation:
 
