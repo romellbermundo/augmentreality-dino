@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Grabbable A-Frame Sample</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <!-- draggable, grabbable -->
+    <script src="https://unpkg.com/aframe-event-set-component@3.0.3/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://unpkg.com/super-hands@2.1.0/dist/super-hands.min.js"></script>
+    <!-- Physics -->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
+  </head>
+  <body>
+    <a-scene physics="gravity: -9.8">
+        <a-assets>
+          <a-mixin id="controller"
+                   physics-collider
+                   static-body="shape: sphere; sphereRadius: 0.02"
+                   super-hands="colliderEvent: collisions;
+                                colliderEventProperty: els;
+                                colliderEndEvent: collisions;
+                                scolliderEndEventProperty: clearedEls"
+                   collision-filter = "group: hands;
+                                       collidesWith: red, blue;
+                                       collisionForces: false">
+          </a-mixin>
+          <a-mixin id="cube" dynamic-body grabbable
+              geometry="primitive: box; width: 0.5; height: 0.5; depth: 0.5">
+          </a-mixin>
+        </a-assets>
+        <a-entity progressive-controls></a-entity>
+        <!-- settings pulled in from controller mixin above -->
+        <a-entity id="leftHand" hand-controls="hand: left; handModelStyle: lowPoly; color: #ffcccc" mixin="controller"></a-entity>
+        <a-entity id="rightHand" hand-controls="hand: right; handModelStyle: lowPoly; color: #ffcccc" mixin="controller"></a-entity>
+        <!-- can be picked up because it collides with the hands group and vice versa -->
+        <a-entity mixin="cube" position="0 1.6 -1" material="color: red" sleepy
+            collision-filter="group: red; collidesWith: default, hands, blue">
+        </a-entity>
+        <!-- even though the controller has blue in its collidesWith list,
+             since the blue cube doesn't also have hands in its list, you cannot
+             pick it up, but you can knock it around with the red cube -->
+        <a-entity mixin="cube" position="0 1 -1" material="color: blue" sleepy
+            collision-filter="group: blue; collidesWith: default, red">
+        </a-entity>
+        <!-- floor entity. 'default' collision group so cubes will bounce off -->
+        <a-box width="20" depth="20" height="0.1" static-body
+               collision-filter="collidesWith: red, blue"
+            material="color: #7BC8A4"></a-box>
+      </a-scene>
+  </body>
+</html>
