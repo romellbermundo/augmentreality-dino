@@ -2,28 +2,28 @@
 
 Augmented Reality Test Repository
 
-Introduction:
+## Introduction:
 
 3D world with all experimental things to play and have fun.
 You can interact with objects in the world. Sound effects and animations :D.
 
-Installation:
+## Installation:
 
 git clone
 npm i
 npm run start
 
-Technologies used:
+## Technologies:
 
 A-Frame
 Javascript
 unpkg - fast, global content delivery network for everything on npm. Use it to quickly and easily load any file from any package using a URL like:
 
-Shortcuts:
+## Shortcuts:
 
 Visual Inspector - <ctrl> + <alt> + i or <ctrl> + <option> + i
 
-Resources:
+## Resources:
 
 UNPKG - unpkg is a fast, global content delivery network for everything on npm. Use it to quickly and easily load any file from any package using a URL like: unpkg.com/:package@:version/:file - https://unpkg.com
 
