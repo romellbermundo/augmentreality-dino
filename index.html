@@ -97,6 +97,7 @@ function createFallbackRex(){
  let last=[-1.05,2.32,0];for(let i=0;i<7;i++){const next=[-1.55-i*.43,2.34+i*.075,0];segment(group,last,next,.55-i*.075,Math.max(.025,.47-i*.073),skin);last=next}
  return group;
 }
+let legacyRigUpdate=null;
 const fallback=createFallbackRex();idlePivot.add(fallback);let usingFallback=true;
 function ready(message){loaded=true;applySize();status.textContent=message;document.getElementById('size').disabled=false}
 ready('T-Rex ready! Explore in 3D or tap Start AR.');
@@ -109,7 +110,56 @@ const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');m
   const box=new THREE.Box3().setFromObject(model),dims=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
   if(!Number.isFinite(dims.y)||dims.y<=0)throw new Error('Invalid dinosaur geometry');
   model.position.sub(center);model.position.y+=dims.y/2;
-  const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
+  // Lightweight procedural three-joint rig for this unrigged OBJ.
+// Deform the head and tail regions around soft hinges; keep the torso stable.
+const rigParts=[];
+const axis='z', low=box.min[axis], high=box.max[axis], span=high-low;
+const headEnd=low+span*.24, tailStart=low+span*.76;
+const headHinge=low+span*.34, tailHinge=low+span*.66;
+const smooth=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)};
+model.traverse(part=>{
+ if(!part.isMesh||!part.geometry?.attributes?.position)return;
+ // OBJLoader usually shares geometries only rarely; isolate them for safe deformation.
+ part.geometry=part.geometry.clone();
+ const attr=part.geometry.attributes.position;
+ const original=new Float32Array(attr.array);
+ const weights=new Float32Array(attr.count*2);
+ for(let i=0;i<attr.count;i++){
+  const z=original[i*3+2];
+  weights[i*2]=1-smooth((z-headEnd)/(headHinge-headEnd));
+  weights[i*2+1]=smooth((z-tailHinge)/(tailStart-tailHinge));
+ }
+ rigParts.push({attr,original,weights,geometry:part.geometry});
+});
+const skeleton={head:{angle:0},tail:{angle:0},torso:{angle:0}};
+let lastRigFrame=-1;
+function updateLegacyRig(t){
+ // Limit mesh updates to ~20fps to keep mobile AR responsive.
+ if(t-lastRigFrame<.05)return;
+ lastRigFrame=t;
+ skeleton.head.angle=Math.sin(t*.85)*.085+Math.sin(t*.29)*.035;
+ skeleton.tail.angle=Math.sin(t*1.2+.9)*.12;
+ const headSin=Math.sin(skeleton.head.angle),headCos=Math.cos(skeleton.head.angle);
+ const tailSin=Math.sin(skeleton.tail.angle),tailCos=Math.cos(skeleton.tail.angle);
+ for(const p of rigParts){
+  const out=p.attr.array,src=p.original,w=p.weights;
+  for(let i=0;i<p.attr.count;i++){
+   const j=i*3,x=src[j],y=src[j+1],z=src[j+2];
+   const hw=w[i*2],tw=w[i*2+1];
+   // Soft, weighted hinge rotations around the vertical (Y) axis.
+   const hz=z-headHinge,tx=z-tailHinge;
+   const headX=x*headCos-hz*headSin,headZ=headHinge+x*headSin+hz*headCos;
+   const tailX=x*tailCos-tx*tailSin,tailZ=tailHinge+x*tailSin+tx*tailCos;
+   out[j]=x+(headX-x)*hw+(tailX-x)*tw;
+   out[j+1]=y;
+   out[j+2]=z+(headZ-z)*hw+(tailZ-z)*tw;
+  }
+  p.attr.needsUpdate=true;
+  p.geometry.computeVertexNormals();
+ }
+}
+const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
+legacyRigUpdate=updateLegacyRig;
   idlePivot.remove(fallback);idlePivot.add(normalized);usingFallback=false;ready('Original T-Rex model loaded! Tap Start AR to place it.');
  },undefined,error=>{console.warn('Legacy OBJ failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
 },undefined,error=>{console.warn('Legacy materials failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
@@ -144,6 +194,7 @@ const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 renderer.setAnimationLoop((time,frame)=>{
  const t=time*.001;
  if(loaded&&!reducedMotion.matches){
+  if(!usingFallback&&legacyRigUpdate)legacyRigUpdate(t);
   // Low-amplitude idle motion keeps the static legacy model grounded.
   idlePivot.rotation.y=Math.sin(t*.62)*.045+Math.sin(t*.17)*.035;
   idlePivot.rotation.z=Math.sin(t*.95)*.012;
