@@ -211,6 +211,20 @@ renderer.setAnimationLoop((time,frame)=>{
   arrivalScale.scale.setScalar(.015+.985*eased);
   if(progress>=1){arrivalStart=-2;arrivalScale.scale.setScalar(1);arrivalPortal.userData.sparks.visible=false}
  }
+ // Once the T-Rex has fully arrived, collapse the portal independently
+ // of the Rotate button. The dinosaur remains at full size.
+ if(arrivalStart===-2){
+  const elapsed=Math.max(0,performance.now()-portalCloseStart);
+  const progress=Math.min(1,elapsed/650);
+  const eased=progress*progress*(3-2*progress);
+  const startingScale=mini?1:2.2;
+  arrivalPortal.scale.setScalar(Math.max(.001,startingScale*(1-eased)));
+  if(progress>=1){
+   arrivalPortal.visible=false;
+   arrivalPortal.userData.sparks.visible=false;
+   arrivalStart=-1;
+  }
+ }
  if(rotationStart>=0){
   const u=Math.min(1,(performance.now()-rotationStart)/rotationDuration);
   const e=u*u*(3-2*u);
