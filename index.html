@@ -167,19 +167,20 @@ const reticle=makePortal();reticle.visible=false;scene.add(reticle);
 const arrivalPortal=makePortal();arrivalPortal.visible=false;scene.add(arrivalPortal);
 let arrivalStart=-1,portalCloseStart=0;const arrivalDuration=1700;
 const arrivalScale=new THREE.Group();dinosaur.remove(idlePivot);arrivalScale.add(idlePivot);dinosaur.add(arrivalScale);
-let hitTestSource=null,referenceSpace=null;const placeButton=document.getElementById('place');const tip=document.getElementById('reticle-tip');
+let hitTestSource=null,referenceSpace=null,surfaceFound=false;
+const hitMatrix=new THREE.Matrix4();const placeButton=document.getElementById('place');const tip=document.getElementById('reticle-tip');
 const arButton=ARButton.createButton(renderer,{requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay'],domOverlay:{root:document.getElementById('ui')}});
 document.getElementById('ar-slot').appendChild(arButton);
 arButton.textContent=arButton.textContent==='START AR'?'Start AR':arButton.textContent;
 renderer.xr.addEventListener('sessionstart',async()=>{
- document.body.classList.add('ar-active');document.body.classList.remove('ar-placed');tip.textContent='Scan the ground, then press Place T-Rex';placeButton.textContent='🦖 Place T-Rex';scene.background=null;ground.visible=false;grid.visible=false;controls.enabled=false;placed=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalPortal.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';dinosaur.visible=false;
+ document.body.classList.add('ar-active');document.body.classList.remove('ar-placed');tip.textContent='Scan the ground, then press Place T-Rex';placeButton.textContent='🦖 Place T-Rex';scene.background=null;ground.visible=false;grid.visible=false;controls.enabled=false;placed=false;surfaceFound=false;reticle.visible=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalPortal.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';dinosaur.visible=false;
  try{const session=renderer.xr.getSession();referenceSpace=await session.requestReferenceSpace('viewer');hitTestSource=await session.requestHitTestSource({space:referenceSpace});}catch(e){tip.textContent='Surface tracking unavailable. You can still place the T-Rex in front of you.'}
 });
-renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=new THREE.Color('#162521');ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;placed=false});
+renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=new THREE.Color('#162521');ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;surfaceFound=false;placed=false});
 function placeDinosaur(){
  if(!renderer.xr.isPresenting||!loaded){tip.textContent='The dinosaur is still loading. Please wait.';return}
  if(placed)return;
- if(reticle.visible){dinosaur.position.copy(reticle.position)}
+ if(surfaceFound&&reticle.visible){dinosaur.position.copy(reticle.position)}
  else{
   // Simple fallback when the camera cannot identify a floor.
   const xrCamera=renderer.xr.getCamera();const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);
@@ -199,8 +200,38 @@ renderer.setAnimationLoop((time,frame)=>{
   idlePivot.rotation.set(0,0,0);
   idlePivot.scale.set(1,1,1);
  }else{idlePivot.rotation.set(0,0,0);idlePivot.scale.set(1,1,1)}
- if(renderer.xr.isPresenting&&frame&&hitTestSource){const hits=frame.getHitTestResults(hitTestSource);if(hits.length){const pose=hits[0].getPose(renderer.xr.getReferenceSpace());if(pose){reticle.visible=true;reticle.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(pose.transform.matrix));reticle.quaternion.setFromRotationMatrix(new THREE.Matrix4().fromArray(pose.transform.matrix))}}else reticle.visible=false}
- if(renderer.xr.isPresenting&&!placed&&!reticle.visible){const xrCamera=renderer.xr.getCamera();const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);reticle.position.copy(xrCamera.position).addScaledVector(direction,2);reticle.position.y=Math.max(0,reticle.position.y-.9);reticle.quaternion.identity();reticle.visible=true}
+ // Track actual floor hits separately from the approximate fallback preview.
+ // The portal geometry is already horizontal; copying the hit pose rotation
+ // would tip it upright or sideways on some Android devices.
+ if(renderer.xr.isPresenting&&!placed){
+  surfaceFound=false;
+  if(frame&&hitTestSource){
+   const hits=frame.getHitTestResults(hitTestSource);
+   if(hits.length){
+    const pose=hits[0].getPose(renderer.xr.getReferenceSpace());
+    if(pose){
+     hitMatrix.fromArray(pose.transform.matrix);
+     reticle.position.setFromMatrixPosition(hitMatrix);
+     reticle.quaternion.identity();
+     reticle.visible=true;
+     surfaceFound=true;
+     tip.textContent='Surface found — tap Place T-Rex';
+    }
+   }
+  }
+  if(!surfaceFound){
+   const xrCamera=renderer.xr.getCamera();
+   const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);
+   direction.y=0;
+   if(direction.lengthSq()<.001)direction.set(0,0,-1);
+   direction.normalize();
+   reticle.position.copy(xrCamera.position).addScaledVector(direction,2);
+   reticle.position.y=Math.max(0,xrCamera.position.y-1.3);
+   reticle.quaternion.identity();
+   reticle.visible=true;
+   tip.textContent=hitTestSource?'Scanning for a floor — move your phone slowly':'Surface tracking unavailable — approximate placement';
+  }
+ }
  if(placed)reticle.visible=false;
  function animatePortalParticles(portal,clock){const d=portal.userData;for(let i=0;i<d.count;i++){const phase=i*2.399963+clock*.75;const radius=.12+(i%9)/9*.22;const j=i*3;d.positions[j]=Math.cos(phase)*radius;d.positions[j+1]=.04+((clock*.12+i*.073)% .35);d.positions[j+2]=Math.sin(phase)*radius;}d.sparks.geometry.attributes.position.needsUpdate=true}
  if(reticle.visible){animatePortalParticles(reticle,t);reticle.userData.ticks.rotation.y=t*.35;reticle.userData.energy.material.opacity=.12+Math.sin(t*3)*.06}
