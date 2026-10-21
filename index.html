@@ -115,14 +115,26 @@ const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');m
   // Keep the original geometry intact; animate a grounded model pivot instead.
   legacyRigUpdate=null;
   const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
-legacyRigUpdate=updateLegacyRig;
+legacyRigUpdate=null;
   idlePivot.remove(fallback);idlePivot.add(normalized);usingFallback=false;ready('Original T-Rex model loaded! Tap Start AR to place it.');
  },undefined,error=>{console.warn('Legacy OBJ failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
 },undefined,error=>{console.warn('Legacy materials failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
 
 document.getElementById('size').onclick=()=>{mini=!mini;applySize()};
-document.getElementById('rotate').onclick=()=>{dinosaur.rotation.y+=Math.PI/4};
-document.getElementById('reset').onclick=()=>{dinosaur.rotation.set(0,0,0);dinosaur.position.set(0,0,0);placed=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalScale.scale.setScalar(1);document.body.classList.remove('ar-placed');placeButton.textContent='🦖 Place T-Rex';if(renderer.xr.isPresenting)dinosaur.visible=false;else{camera.position.set(7,4.3,10);controls.target.set(0,1.8,0);controls.update()}};
+let rotationFrom=0,rotationTo=0,rotationStart=-1;
+const rotationDuration=280;
+document.getElementById('rotate').onclick=()=>{
+ const now=performance.now();
+ if(rotationStart>=0){
+  const u=Math.min(1,(now-rotationStart)/rotationDuration);
+  const e=u*u*(3-2*u);
+  dinosaur.rotation.y=rotationFrom+(rotationTo-rotationFrom)*e;
+ }
+ rotationFrom=dinosaur.rotation.y;
+ rotationTo+=Math.PI/4;
+ rotationStart=now;
+};
+document.getElementById('reset').onclick=()=>{dinosaur.rotation.set(0,0,0);rotationFrom=0;rotationTo=0;rotationStart=-1;dinosaur.position.set(0,0,0);placed=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalScale.scale.setScalar(1);document.body.classList.remove('ar-placed');placeButton.textContent='🦖 Place T-Rex';if(renderer.xr.isPresenting)dinosaur.visible=false;else{camera.position.set(7,4.3,10);controls.target.set(0,1.8,0);controls.update()}};
 function makePortal(){
  const portal=new THREE.Group();
  const bronze=new THREE.MeshBasicMaterial({color:0xc5a65d,side:THREE.DoubleSide,transparent:true,opacity:.9,depthWrite:false});
@@ -133,7 +145,16 @@ function makePortal(){
  const ticks=new THREE.Group();portal.add(ticks);
  for(let i=0;i<24;i++){const a=i*Math.PI/12,r=.285;const mark=new THREE.Mesh(new THREE.BoxGeometry(i%3===0?.035:.018,.006,.009),bronze);mark.position.set(Math.cos(a)*r,.025,Math.sin(a)*r);mark.rotation.y=-a;ticks.add(mark)}
  const energy=new THREE.Mesh(new THREE.CircleGeometry(.225,48),new THREE.MeshBasicMaterial({color:0x65efbf,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide}));energy.rotation.x=-Math.PI/2;energy.position.y=.03;portal.add(energy);
- portal.userData={ticks,energy};return portal;
+ // Small luminous sparks circulate above the portal like temporal energy.
+ const count=36,positions=new Float32Array(count*3);
+ const sparkGeometry=new THREE.BufferGeometry();
+ sparkGeometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
+ const sparks=new THREE.Points(sparkGeometry,new THREE.PointsMaterial({
+  color:0x9affd8,size:.022,transparent:true,opacity:.86,
+  depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true
+ }));
+ portal.add(sparks);
+ portal.userData={ticks,energy,sparks,positions,count};return portal;
 }
 const reticle=makePortal();reticle.visible=false;scene.add(reticle);
 const arrivalPortal=makePortal();arrivalPortal.visible=false;scene.add(arrivalPortal);
@@ -157,7 +178,7 @@ function placeDinosaur(){
   dinosaur.position.copy(xrCamera.position).addScaledVector(direction,3);
   dinosaur.position.y=Math.max(0,dinosaur.position.y-1.3);
  }
- dinosaur.rotation.y=0;dinosaur.visible=true;placed=true;arrivalStart=performance.now();arrivalScale.scale.setScalar(.015);arrivalPortal.position.copy(dinosaur.position);arrivalPortal.visible=true;arrivalPortal.scale.setScalar(mini?1:2.2);document.body.classList.add('ar-placed');placeButton.textContent='↗ Move Dino';tip.textContent='';
+ dinosaur.rotation.y=0;rotationFrom=0;rotationTo=0;rotationStart=-1;dinosaur.visible=true;placed=true;arrivalStart=performance.now();arrivalScale.scale.setScalar(.015);arrivalPortal.position.copy(dinosaur.position);arrivalPortal.visible=true;arrivalPortal.scale.setScalar(mini?1:2.2);document.body.classList.add('ar-placed');placeButton.textContent='↗ Move Dino';tip.textContent='';
 }
 placeButton.addEventListener('click',placeDinosaur);
 renderer.domElement.addEventListener('click',()=>{if(renderer.xr.isPresenting)placeDinosaur()});
@@ -173,13 +194,20 @@ renderer.setAnimationLoop((time,frame)=>{
  if(renderer.xr.isPresenting&&frame&&hitTestSource){const hits=frame.getHitTestResults(hitTestSource);if(hits.length){const pose=hits[0].getPose(renderer.xr.getReferenceSpace());if(pose){reticle.visible=true;reticle.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(pose.transform.matrix));reticle.quaternion.setFromRotationMatrix(new THREE.Matrix4().fromArray(pose.transform.matrix))}}else reticle.visible=false}
  if(renderer.xr.isPresenting&&!placed&&!reticle.visible){const xrCamera=renderer.xr.getCamera();const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);reticle.position.copy(xrCamera.position).addScaledVector(direction,2);reticle.position.y=Math.max(0,reticle.position.y-.9);reticle.quaternion.identity();reticle.visible=true}
  if(placed)reticle.visible=false;
- if(reticle.visible){reticle.userData.ticks.rotation.y=t*.35;reticle.userData.energy.material.opacity=.12+Math.sin(t*3)*.06}
- if(arrivalPortal.visible){arrivalPortal.userData.ticks.rotation.y=-t*.9;arrivalPortal.userData.energy.material.opacity=.13+Math.sin(t*4)*.07}
+ function animatePortalParticles(portal,clock){const d=portal.userData;for(let i=0;i<d.count;i++){const phase=i*2.399963+clock*.75;const radius=.12+(i%9)/9*.22;const j=i*3;d.positions[j]=Math.cos(phase)*radius;d.positions[j+1]=.04+((clock*.12+i*.073)% .35);d.positions[j+2]=Math.sin(phase)*radius;}d.sparks.geometry.attributes.position.needsUpdate=true}
+ if(reticle.visible){animatePortalParticles(reticle,t);reticle.userData.ticks.rotation.y=t*.35;reticle.userData.energy.material.opacity=.12+Math.sin(t*3)*.06}
+ if(arrivalPortal.visible){animatePortalParticles(arrivalPortal,t);arrivalPortal.userData.ticks.rotation.y=-t*.9;arrivalPortal.userData.energy.material.opacity=.13+Math.sin(t*4)*.07}
  if(arrivalStart>=0){
   const progress=Math.min(1,(performance.now()-arrivalStart)/arrivalDuration);
   const eased=1-Math.pow(1-progress,3);
   arrivalScale.scale.setScalar(.015+.985*eased);
   if(progress>=1){arrivalStart=-1;arrivalScale.scale.setScalar(1)}
+ }
+ if(rotationStart>=0){
+  const u=Math.min(1,(performance.now()-rotationStart)/rotationDuration);
+  const e=u*u*(3-2*u);
+  dinosaur.rotation.y=rotationFrom+(rotationTo-rotationFrom)*e;
+  if(u>=1){rotationStart=-1;rotationFrom=rotationTo}
  }
  if(!renderer.xr.isPresenting)controls.update();
  renderer.render(scene,camera);
