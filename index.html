@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#101b19"><meta name="description" content="Place a giant T-Rex in your world using augmented reality.">
+<meta name="theme-color" content="#171d13"><meta name="description" content="Place a giant T-Rex in your world using augmented reality.">
 <title>T-Rex AR • Dinosaur Encounter</title>
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f3f6ef;background:#101b19}*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden}canvas{display:block}
@@ -12,14 +12,29 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px}he
 #help{pointer-events:none;text-align:center;font-size:.74rem;color:#d0dcd2;text-shadow:0 2px 8px #000;margin:7px auto 0;max-width:440px}#reticle-tip{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:.75rem;color:#fff9;pointer-events:none;display:none}
 body.ar-active #status{display:none}body.ar-active:not(.ar-placed) #reticle-tip{display:block}body.ar-active #help{display:none}body.ar-active #place{display:inline-block}#place{display:none;background:linear-gradient(180deg,#d7e98c,#8aaf47);color:#13251a;border:2px solid #ecffc2;font-size:1rem}body.ar-placed #place{background:linear-gradient(180deg,#304e44,#1b342c);color:#fff;border-color:#ffffff40}body.ar-active #controls{background:#10231f9c;border-radius:18px;padding:9px}body.ar-active #reticle-tip{top:40%;background:#10231fbb;border-radius:12px;padding:9px 12px;text-align:center;width:max-content;max-width:85vw}body.ar-active #ar-slot{display:none}
 @media(max-width:460px){#controls{gap:7px}button{padding:11px;font-size:.83rem}header div{padding:10px 12px}}
+
+/* Jurassic field-guide controls: safe camera margins, single compact toolbar. */
+:root{color:#f1ead5;background:#151b13}
+#ui{padding:calc(64px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));}
+header{align-items:flex-start}header div{background:linear-gradient(145deg,#202b1de8,#10190de0);border:1px solid #ad975a77;border-left:3px solid #c7a85d;border-radius:13px;padding:13px 17px;box-shadow:0 8px 22px #0008}
+h1{font-size:clamp(1rem,4.5vw,1.25rem);font-weight:900;letter-spacing:.09em;color:#e7d59c;text-shadow:0 2px 4px #0008}header p{color:#d6c8a3;font-size:.75rem;letter-spacing:.03em}
+#controls{display:flex;flex-wrap:nowrap;justify-content:center;gap:5px;width:100%;max-width:620px;margin:auto;pointer-events:auto;padding:6px!important;border-radius:12px!important;background:#182216e8!important;border:1px solid #a18b5270;box-shadow:0 7px 24px #0009}
+#controls button{flex:1 1 0;min-width:0;white-space:nowrap;padding:12px 5px;font-size:clamp(.67rem,2.8vw,.92rem);font-weight:800;line-height:1.1;border-radius:8px;background:linear-gradient(180deg,#4a5836,#253321);border:1px solid #b4a06a66;color:#f4e9c8;box-shadow:inset 0 1px #ffffff18,0 2px 5px #0005}
+#controls #place{flex:1.35 1 0;background:linear-gradient(180deg,#d7b86e,#9c7736);border-color:#f1d493;color:#201b0e}
+body.ar-placed #controls #place{background:linear-gradient(180deg,#4a5836,#253321);color:#f4e9c8}
+#ar-slot{flex:1.35 1 0;min-width:0}#ar-slot button{width:100%!important;height:100%!important;padding:12px 3px!important;font-size:clamp(.67rem,2.8vw,.92rem)!important}
+#status{background:#192517e0;border-color:#a18b5270;color:#e7d59c}body.ar-active #status{display:none}
+#reticle-tip{background:#192517db!important;color:#f1e3bc!important;border:1px solid #bda36866}
+#help{color:#dfd2aa}
+@media(max-width:420px){#ui{padding-left:9px;padding-right:9px}#controls{gap:4px}#controls button{padding:11px 3px}}
 </style>
 </head>
 <body>
 <div id="stage"></div>
 <div id="ui">
-<header><div><h1>🦖 T-REX ENCOUNTER</h1><p>Bring the prehistoric world to life</p></div></header>
+<header><div><h1>🦖 T-REX ENCOUNTER</h1><p>A prehistoric world in your hands</p></div></header>
 <div id="status" role="status">Loading your dinosaur…</div>
-<div><div id="controls"><div id="ar-slot"></div><button id="place" type="button">🦖 Place T-Rex</button><button class="secondary" id="size" type="button">Size: Mini</button><button class="secondary" id="rotate" type="button">Rotate ↻</button><button class="secondary" id="reset" type="button">Reset</button></div><p id="help">Drag to rotate • Pinch to zoom • In AR, scan the ground and tap to place</p></div>
+<div><div id="controls"><div id="ar-slot"></div><button id="place" type="button">Place Dino</button><button class="secondary" id="size" type="button">Mini</button><button class="secondary" id="rotate" type="button">↻ Rotate</button><button class="secondary" id="reset" type="button">Reset</button></div><p id="help">Drag to rotate • Pinch to zoom • In AR, scan the ground and tap to place</p></div>
 </div>
 <div id="reticle-tip">Move your phone slowly to scan the ground, then press Place T-Rex</div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
@@ -39,7 +54,7 @@ const grid=new THREE.GridHelper(30,30,0x65816b,0x385447);grid.position.y=-.02;sc
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1.8,0);controls.enableDamping=true;controls.maxDistance=35;controls.minDistance=3;controls.maxPolarAngle=Math.PI*.49;controls.update();
 const dinosaur=new THREE.Group();scene.add(dinosaur);
 let loaded=false,mini=true,placed=false;const BASE_HEIGHT=4.1;
-function applySize(){dinosaur.scale.setScalar(mini?.16:1);document.getElementById('size').textContent=mini?'Size: Mini':'Size: Life-sized'}
+function applySize(){dinosaur.scale.setScalar(mini?.16:1);document.getElementById('size').textContent=mini?'Mini':'Giant'}
 // Always provide a visible, lightweight dinosaur while the legacy OBJ loads.
 function createFallbackRex(){
  const group=new THREE.Group();
@@ -73,7 +88,9 @@ const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');m
  materials.preload();const loader=new OBJLoader();loader.setMaterials(materials);loader.load('./assets/psone/t-rexaur.obj',model=>{
   // The original game asset uses a large, arbitrary unit scale.
   // Normalize its height to approximately a real T-Rex's 4.1m.
-  model.rotation.x=Math.PI; // Original PS1 asset was exported upside down.\n  model.updateMatrixWorld(true);\n  const box=new THREE.Box3().setFromObject(model),dims=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+  model.rotation.x=Math.PI; // Correct original model orientation.
+  model.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(model),dims=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
   if(!Number.isFinite(dims.y)||dims.y<=0)throw new Error('Invalid dinosaur geometry');
   model.position.sub(center);model.position.y+=dims.y/2;
   const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
@@ -103,7 +120,7 @@ function placeDinosaur(){
   dinosaur.position.copy(xrCamera.position).addScaledVector(direction,3);
   dinosaur.position.y=Math.max(0,dinosaur.position.y-1.3);
  }
- dinosaur.rotation.y=0;dinosaur.visible=true;placed=true;document.body.classList.add('ar-placed');placeButton.textContent='↗ Move T-Rex';tip.textContent='';
+ dinosaur.rotation.y=0;dinosaur.visible=true;placed=true;document.body.classList.add('ar-placed');placeButton.textContent='↗ Move Dino';tip.textContent='';
 }
 placeButton.addEventListener('click',placeDinosaur);
 renderer.domElement.addEventListener('click',()=>{if(renderer.xr.isPresenting)placeDinosaur()});
