@@ -125,6 +125,13 @@ let rotationFrom=0,rotationTo=0,rotationStart=-1;
 const rotationDuration=280;
 document.getElementById('rotate').onclick=()=>{
  const now=performance.now();
+ if(arrivalStart===-2){
+  const initial=mini?1:2.2;
+  const elapsed=performance.now()-(portalCloseStart||performance.now());
+  const u=Math.min(1,elapsed/650);
+  arrivalPortal.scale.setScalar(Math.max(.001,initial*(1-u*u*(3-2*u))));
+  if(u>=1){arrivalPortal.visible=false;arrivalStart=-1}
+ }
  if(rotationStart>=0){
   const u=Math.min(1,(now-rotationStart)/rotationDuration);
   const e=u*u*(3-2*u);
@@ -134,7 +141,7 @@ document.getElementById('rotate').onclick=()=>{
  rotationTo+=Math.PI/4;
  rotationStart=now;
 };
-document.getElementById('reset').onclick=()=>{dinosaur.rotation.set(0,0,0);rotationFrom=0;rotationTo=0;rotationStart=-1;dinosaur.position.set(0,0,0);placed=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalScale.scale.setScalar(1);document.body.classList.remove('ar-placed');placeButton.textContent='🦖 Place T-Rex';if(renderer.xr.isPresenting)dinosaur.visible=false;else{camera.position.set(7,4.3,10);controls.target.set(0,1.8,0);controls.update()}};
+document.getElementById('reset').onclick=()=>{dinosaur.rotation.set(0,0,0);rotationFrom=0;rotationTo=0;rotationStart=-1;dinosaur.position.set(0,0,0);placed=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalPortal.scale.setScalar(1);arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';document.body.classList.remove('ar-placed');placeButton.textContent='🦖 Place T-Rex';if(renderer.xr.isPresenting)dinosaur.visible=false;else{camera.position.set(7,4.3,10);controls.target.set(0,1.8,0);controls.update()}};
 function makePortal(){
  const portal=new THREE.Group();
  const bronze=new THREE.MeshBasicMaterial({color:0xc5a65d,side:THREE.DoubleSide,transparent:true,opacity:.9,depthWrite:false});
@@ -158,19 +165,20 @@ function makePortal(){
 }
 const reticle=makePortal();reticle.visible=false;scene.add(reticle);
 const arrivalPortal=makePortal();arrivalPortal.visible=false;scene.add(arrivalPortal);
-let arrivalStart=-1;const arrivalDuration=1700;
+let arrivalStart=-1,portalCloseStart=0;const arrivalDuration=1700;
 const arrivalScale=new THREE.Group();dinosaur.remove(idlePivot);arrivalScale.add(idlePivot);dinosaur.add(arrivalScale);
 let hitTestSource=null,referenceSpace=null;const placeButton=document.getElementById('place');const tip=document.getElementById('reticle-tip');
 const arButton=ARButton.createButton(renderer,{requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay'],domOverlay:{root:document.getElementById('ui')}});
 document.getElementById('ar-slot').appendChild(arButton);
 arButton.textContent=arButton.textContent==='START AR'?'Start AR':arButton.textContent;
 renderer.xr.addEventListener('sessionstart',async()=>{
- document.body.classList.add('ar-active');document.body.classList.remove('ar-placed');tip.textContent='Scan the ground, then press Place T-Rex';placeButton.textContent='🦖 Place T-Rex';scene.background=null;ground.visible=false;grid.visible=false;controls.enabled=false;placed=false;arrivalStart=-1;arrivalPortal.visible=false;dinosaur.visible=false;
+ document.body.classList.add('ar-active');document.body.classList.remove('ar-placed');tip.textContent='Scan the ground, then press Place T-Rex';placeButton.textContent='🦖 Place T-Rex';scene.background=null;ground.visible=false;grid.visible=false;controls.enabled=false;placed=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalPortal.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';dinosaur.visible=false;
  try{const session=renderer.xr.getSession();referenceSpace=await session.requestReferenceSpace('viewer');hitTestSource=await session.requestHitTestSource({space:referenceSpace});}catch(e){tip.textContent='Surface tracking unavailable. You can still place the T-Rex in front of you.'}
 });
-renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=new THREE.Color('#162521');ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;placed=false});
+renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=new THREE.Color('#162521');ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;placed=false});
 function placeDinosaur(){
  if(!renderer.xr.isPresenting||!loaded){tip.textContent='The dinosaur is still loading. Please wait.';return}
+ if(placed)return;
  if(reticle.visible){dinosaur.position.copy(reticle.position)}
  else{
   // Simple fallback when the camera cannot identify a floor.
@@ -178,7 +186,7 @@ function placeDinosaur(){
   dinosaur.position.copy(xrCamera.position).addScaledVector(direction,3);
   dinosaur.position.y=Math.max(0,dinosaur.position.y-1.3);
  }
- dinosaur.rotation.y=0;rotationFrom=0;rotationTo=0;rotationStart=-1;dinosaur.visible=true;placed=true;arrivalStart=performance.now();arrivalScale.scale.setScalar(.015);arrivalPortal.position.copy(dinosaur.position);arrivalPortal.visible=true;arrivalPortal.scale.setScalar(mini?1:2.2);document.body.classList.add('ar-placed');placeButton.textContent='↗ Move Dino';tip.textContent='';
+ dinosaur.rotation.y=0;rotationFrom=0;rotationTo=0;rotationStart=-1;dinosaur.visible=true;placed=true;arrivalStart=performance.now();portalCloseStart=arrivalStart+arrivalDuration;arrivalPortal.userData.sparks.visible=true;arrivalScale.scale.setScalar(.015);arrivalPortal.position.copy(dinosaur.position);arrivalPortal.visible=true;arrivalPortal.scale.setScalar(mini?1:2.2);document.body.classList.add('ar-placed');placeButton.disabled=true;placeButton.style.display='none';tip.textContent='';
 }
 placeButton.addEventListener('click',placeDinosaur);
 renderer.domElement.addEventListener('click',()=>{if(renderer.xr.isPresenting)placeDinosaur()});
@@ -201,7 +209,7 @@ renderer.setAnimationLoop((time,frame)=>{
   const progress=Math.min(1,(performance.now()-arrivalStart)/arrivalDuration);
   const eased=1-Math.pow(1-progress,3);
   arrivalScale.scale.setScalar(.015+.985*eased);
-  if(progress>=1){arrivalStart=-1;arrivalScale.scale.setScalar(1)}
+  if(progress>=1){arrivalStart=-2;arrivalScale.scale.setScalar(1);arrivalPortal.userData.sparks.visible=false}
  }
  if(rotationStart>=0){
   const u=Math.min(1,(performance.now()-rotationStart)/rotationDuration);
