@@ -110,55 +110,11 @@ const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');m
   const box=new THREE.Box3().setFromObject(model),dims=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
   if(!Number.isFinite(dims.y)||dims.y<=0)throw new Error('Invalid dinosaur geometry');
   model.position.sub(center);model.position.y+=dims.y/2;
-  // Lightweight procedural three-joint rig for this unrigged OBJ.
-// Deform the head and tail regions around soft hinges; keep the torso stable.
-const rigParts=[];
-const axis='z', low=box.min[axis], high=box.max[axis], span=high-low;
-const headEnd=low+span*.24, tailStart=low+span*.76;
-const headHinge=low+span*.34, tailHinge=low+span*.66;
-const smooth=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)};
-model.traverse(part=>{
- if(!part.isMesh||!part.geometry?.attributes?.position)return;
- // OBJLoader usually shares geometries only rarely; isolate them for safe deformation.
- part.geometry=part.geometry.clone();
- const attr=part.geometry.attributes.position;
- const original=new Float32Array(attr.array);
- const weights=new Float32Array(attr.count*2);
- for(let i=0;i<attr.count;i++){
-  const z=original[i*3+2];
-  weights[i*2]=1-smooth((z-headEnd)/(headHinge-headEnd));
-  weights[i*2+1]=smooth((z-tailHinge)/(tailStart-tailHinge));
- }
- rigParts.push({attr,original,weights,geometry:part.geometry});
-});
-const skeleton={head:{angle:0},tail:{angle:0},torso:{angle:0}};
-let lastRigFrame=-1;
-function updateLegacyRig(t){
- // Limit mesh updates to ~20fps to keep mobile AR responsive.
- if(t-lastRigFrame<.05)return;
- lastRigFrame=t;
- skeleton.head.angle=Math.sin(t*.8)*.075+Math.sin(t*.31)*.018;
- skeleton.tail.angle=Math.sin(t*1.2+.9)*.12;
- const headSin=Math.sin(skeleton.head.angle),headCos=Math.cos(skeleton.head.angle);
- const tailSin=Math.sin(skeleton.tail.angle),tailCos=Math.cos(skeleton.tail.angle);
- for(const p of rigParts){
-  const out=p.attr.array,src=p.original,w=p.weights;
-  for(let i=0;i<p.attr.count;i++){
-   const j=i*3,x=src[j],y=src[j+1],z=src[j+2];
-   const hw=w[i*2],tw=w[i*2+1];
-   // Soft, weighted hinge rotations around the vertical (Y) axis.
-   const hz=z-headHinge,tx=z-tailHinge;
-   const headY=y*headCos-hz*headSin,headZ=headHinge+y*headSin+hz*headCos;
-   const tailX=x*tailCos-tx*tailSin,tailZ=tailHinge+x*tailSin+tx*tailCos;
-   out[j]=x+(tailX-x)*tw;
-   out[j+1]=y+(headY-y)*hw;
-   out[j+2]=z+(headZ-z)*hw+(tailZ-z)*tw;
-  }
-  p.attr.needsUpdate=true;
-  p.geometry.computeVertexNormals();
- }
-}
-const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
+  // The OBJ has no skin weights or bones. The previous vertex rig used
+  // world-space limits on local-space vertices and distorted unrelated parts.
+  // Keep the original geometry intact; animate a grounded model pivot instead.
+  legacyRigUpdate=null;
+  const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
 legacyRigUpdate=updateLegacyRig;
   idlePivot.remove(fallback);idlePivot.add(normalized);usingFallback=false;ready('Original T-Rex model loaded! Tap Start AR to place it.');
  },undefined,error=>{console.warn('Legacy OBJ failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
@@ -179,7 +135,7 @@ function makePortal(){
  const energy=new THREE.Mesh(new THREE.CircleGeometry(.225,48),new THREE.MeshBasicMaterial({color:0x65efbf,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide}));energy.rotation.x=-Math.PI/2;energy.position.y=.03;portal.add(energy);
  portal.userData={ticks,energy};return portal;
 }
-const reticle=makePortal();reticle.matrixAutoUpdate=false;reticle.visible=false;scene.add(reticle);
+const reticle=makePortal();reticle.visible=false;scene.add(reticle);
 const arrivalPortal=makePortal();arrivalPortal.visible=false;scene.add(arrivalPortal);
 let arrivalStart=-1;const arrivalDuration=1700;
 const arrivalScale=new THREE.Group();dinosaur.remove(idlePivot);arrivalScale.add(idlePivot);dinosaur.add(arrivalScale);
@@ -194,7 +150,7 @@ renderer.xr.addEventListener('sessionstart',async()=>{
 renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=new THREE.Color('#162521');ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;placed=false});
 function placeDinosaur(){
  if(!renderer.xr.isPresenting||!loaded){tip.textContent='The dinosaur is still loading. Please wait.';return}
- if(reticle.visible){dinosaur.position.setFromMatrixPosition(reticle.matrix)}
+ if(reticle.visible){dinosaur.position.copy(reticle.position)}
  else{
   // Simple fallback when the camera cannot identify a floor.
   const xrCamera=renderer.xr.getCamera();const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);
@@ -211,11 +167,13 @@ renderer.setAnimationLoop((time,frame)=>{
  if(loaded&&!reducedMotion.matches){
   if(!usingFallback&&legacyRigUpdate)legacyRigUpdate(t);
   // Low-amplitude idle motion keeps the static legacy model grounded.
-  idlePivot.rotation.y=Math.sin(t*.28)*.008;
-  idlePivot.rotation.z=Math.sin(t*.9)*.003;
-  idlePivot.scale.set(1+Math.sin(t*1.7)*.006,1+Math.sin(t*1.7)*.004,1+Math.sin(t*1.7)*.008);
+  idlePivot.rotation.y=0;
+  idlePivot.rotation.z=Math.sin(t*.85)*.012;
+  idlePivot.scale.set(1+Math.sin(t*1.5)*.003,1+Math.sin(t*1.5)*.006,1+Math.sin(t*1.5)*.003);
  }else{idlePivot.rotation.set(0,0,0);idlePivot.scale.set(1,1,1)}
- if(renderer.xr.isPresenting&&frame&&hitTestSource){const hits=frame.getHitTestResults(hitTestSource);if(hits.length){const pose=hits[0].getPose(renderer.xr.getReferenceSpace());if(pose){reticle.visible=true;reticle.matrix.fromArray(pose.transform.matrix)}}else reticle.visible=false}
+ if(renderer.xr.isPresenting&&frame&&hitTestSource){const hits=frame.getHitTestResults(hitTestSource);if(hits.length){const pose=hits[0].getPose(renderer.xr.getReferenceSpace());if(pose){reticle.visible=true;reticle.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(pose.transform.matrix));reticle.quaternion.setFromRotationMatrix(new THREE.Matrix4().fromArray(pose.transform.matrix))}}else reticle.visible=false}
+ if(renderer.xr.isPresenting&&!placed&&!reticle.visible){const xrCamera=renderer.xr.getCamera();const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);reticle.position.copy(xrCamera.position).addScaledVector(direction,2);reticle.position.y=Math.max(0,reticle.position.y-.9);reticle.quaternion.identity();reticle.visible=true}
+ if(placed)reticle.visible=false;
  if(reticle.visible){reticle.userData.ticks.rotation.y=t*.35;reticle.userData.energy.material.opacity=.12+Math.sin(t*3)*.06}
  if(arrivalPortal.visible){arrivalPortal.userData.ticks.rotation.y=-t*.9;arrivalPortal.userData.energy.material.opacity=.13+Math.sin(t*4)*.07}
  if(arrivalStart>=0){
