@@ -62,12 +62,13 @@ import {ARButton} from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/
 const stage=document.getElementById('stage'),status=document.getElementById('status');
 const scene=new THREE.Scene();scene.background=new THREE.Color('#162521');
 const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.01,150);camera.position.set(7,4.3,10);
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.xr.enabled=true;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.35;stage.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xeaf6ff,0x475345,2.2));const sun=new THREE.DirectionalLight(0xffe6ba,3);sun.position.set(5,11,7);scene.add(sun);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.xr.enabled=true;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.92;stage.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xd9e1d2,0x52584b,1.35));const sun=new THREE.DirectionalLight(0xffedcf,1.25);sun.position.set(5,11,7);scene.add(sun);
 const ground=new THREE.Mesh(new THREE.CircleGeometry(15,80),new THREE.MeshStandardMaterial({color:0x2a4235,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.03;scene.add(ground);
 const grid=new THREE.GridHelper(30,30,0x65816b,0x385447);grid.position.y=-.02;scene.add(grid);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1.8,0);controls.enableDamping=true;controls.maxDistance=35;controls.minDistance=3;controls.maxPolarAngle=Math.PI*.49;controls.update();
 const dinosaur=new THREE.Group();scene.add(dinosaur);
+const idlePivot=new THREE.Group();dinosaur.add(idlePivot);
 let loaded=false,mini=true,placed=false;const BASE_HEIGHT=4.1;
 function applySize(){dinosaur.scale.setScalar(mini?.16:1);document.getElementById('size').textContent=mini?'Mini':'Giant'}
 // Always provide a visible, lightweight dinosaur while the legacy OBJ loads.
@@ -96,11 +97,11 @@ function createFallbackRex(){
  let last=[-1.05,2.32,0];for(let i=0;i<7;i++){const next=[-1.55-i*.43,2.34+i*.075,0];segment(group,last,next,.55-i*.075,Math.max(.025,.47-i*.073),skin);last=next}
  return group;
 }
-const fallback=createFallbackRex();dinosaur.add(fallback);let usingFallback=true;
+const fallback=createFallbackRex();idlePivot.add(fallback);let usingFallback=true;
 function ready(message){loaded=true;applySize();status.textContent=message;document.getElementById('size').disabled=false}
 ready('T-Rex ready! Explore in 3D or tap Start AR.');
 const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');materialLoader.load('t-rexaur.mtl',materials=>{
- materials.preload();const loader=new OBJLoader();loader.setMaterials(materials);loader.load('./assets/psone/t-rexaur.obj',model=>{
+ materials.preload();for(const material of Object.values(materials.materials)){if(material){material.shininess=8;material.specular?.setRGB(.045,.045,.045);material.needsUpdate=true}}const loader=new OBJLoader();loader.setMaterials(materials);loader.load('./assets/psone/t-rexaur.obj',model=>{
   // The original game asset uses a large, arbitrary unit scale.
   // Normalize its height to approximately a real T-Rex's 4.1m.
   model.rotation.x=Math.PI; // Correct original model orientation.
@@ -109,7 +110,7 @@ const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');m
   if(!Number.isFinite(dims.y)||dims.y<=0)throw new Error('Invalid dinosaur geometry');
   model.position.sub(center);model.position.y+=dims.y/2;
   const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
-  dinosaur.remove(fallback);dinosaur.add(normalized);usingFallback=false;ready('Original T-Rex model loaded! Tap Start AR to place it.');
+  idlePivot.remove(fallback);idlePivot.add(normalized);usingFallback=false;ready('Original T-Rex model loaded! Tap Start AR to place it.');
  },undefined,error=>{console.warn('Legacy OBJ failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
 },undefined,error=>{console.warn('Legacy materials failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
 
@@ -139,7 +140,15 @@ function placeDinosaur(){
 }
 placeButton.addEventListener('click',placeDinosaur);
 renderer.domElement.addEventListener('click',()=>{if(renderer.xr.isPresenting)placeDinosaur()});
+const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 renderer.setAnimationLoop((time,frame)=>{
+ const t=time*.001;
+ if(loaded&&!reducedMotion.matches){
+  // Low-amplitude idle motion keeps the static legacy model grounded.
+  idlePivot.rotation.y=Math.sin(t*.62)*.045+Math.sin(t*.17)*.035;
+  idlePivot.rotation.z=Math.sin(t*.95)*.012;
+  idlePivot.scale.set(1+Math.sin(t*1.7)*.006,1+Math.sin(t*1.7)*.004,1+Math.sin(t*1.7)*.008);
+ }else{idlePivot.rotation.set(0,0,0);idlePivot.scale.set(1,1,1)}
  if(renderer.xr.isPresenting&&frame&&hitTestSource){const hits=frame.getHitTestResults(hitTestSource);if(hits.length){const pose=hits[0].getPose(renderer.xr.getReferenceSpace());if(pose){reticle.visible=true;reticle.matrix.fromArray(pose.transform.matrix)}}else reticle.visible=false}
  if(!renderer.xr.isPresenting)controls.update();
  renderer.render(scene,camera);
