@@ -166,10 +166,9 @@ renderer.setAnimationLoop((time,frame)=>{
  const t=time*.001;
  if(loaded&&!reducedMotion.matches){
   if(!usingFallback&&legacyRigUpdate)legacyRigUpdate(t);
-  // Low-amplitude idle motion keeps the static legacy model grounded.
-  idlePivot.rotation.y=0;
-  idlePivot.rotation.z=Math.sin(t*.85)*.012;
-  idlePivot.scale.set(1+Math.sin(t*1.5)*.003,1+Math.sin(t*1.5)*.006,1+Math.sin(t*1.5)*.003);
+  // Keep the dinosaur completely still: no body sway, rocking or scaling.
+  idlePivot.rotation.set(0,0,0);
+  idlePivot.scale.set(1,1,1);
  }else{idlePivot.rotation.set(0,0,0);idlePivot.scale.set(1,1,1)}
  if(renderer.xr.isPresenting&&frame&&hitTestSource){const hits=frame.getHitTestResults(hitTestSource);if(hits.length){const pose=hits[0].getPose(renderer.xr.getReferenceSpace());if(pose){reticle.visible=true;reticle.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(pose.transform.matrix));reticle.quaternion.setFromRotationMatrix(new THREE.Matrix4().fromArray(pose.transform.matrix))}}else reticle.visible=false}
  if(renderer.xr.isPresenting&&!placed&&!reticle.visible){const xrCamera=renderer.xr.getCamera();const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);reticle.position.copy(xrCamera.position).addScaledVector(direction,2);reticle.position.y=Math.max(0,reticle.position.y-.9);reticle.quaternion.identity();reticle.visible=true}
