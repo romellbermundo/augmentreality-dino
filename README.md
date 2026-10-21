@@ -1,34 +1,22 @@
-# ar-test
+# T-Rex AR • Dinosaur Encounter
 
-Augmented Reality Test Repository
+A mobile-first dinosaur experience built with Three.js and WebXR. Uses the existing `assets/psone/t-rexaur.obj` and its original textures.
 
-## Introduction:
+## Features
+- Interactive 3D dinosaur viewer: rotate and zoom
+- Android WebXR AR: scan a horizontal surface and tap to place a T-Rex
+- Life-sized (~4.1 m tall) or miniature dinosaur
+- Rotate and reset controls
+- Graceful fallback to 3D mode when AR isn't available
 
-3D world with all experimental things to play and have fun.
-You can interact with objects in the world. Sound effects and animations :D.
+## Running locally
+Serve the repository using a local web server, e.g. `python -m http.server 8000`, then open `http://localhost:8000`.
 
-## Installation:
+## AR requirements
+WebXR immersive AR requires HTTPS and a supported Android browser/device (typically Chrome with Google Play Services for AR). iOS Safari does not support this WebXR hit-test implementation; the regular 3D viewer still works. Camera and AR permissions must be granted.
 
-git clone
-npm i
-npm run start
+## Deployment
+Host as a static site over HTTPS (e.g. Cloudflare Pages). No build step is needed. The Three.js modules are fetched from jsDelivr, so an internet connection is required.
 
-## Technologies:
-
-A-Frame
-Javascript
-unpkg - fast, global content delivery network for everything on npm. Use it to quickly and easily load any file from any package using a URL like:
-
-## Shortcuts:
-
-Visual Inspector - <ctrl> + <alt> + i or <ctrl> + <option> + i
-
-## Resources:
-
-UNPKG - unpkg is a fast, global content delivery network for everything on npm. Use it to quickly and easily load any file from any package using a URL like: unpkg.com/:package@:version/:file - https://unpkg.com
-
-A-frame tutorials - https://www.youtube.com/watch?v=hoTigCpfStw&list=PL8MkBHej75fJD-HveDzm4xKrciC5VfYuV&index=24
-
-## Credits:
-
-Romell Bermundo
+## Credits
+Romell Bermundo. Original T-Rexaur model retained from the repository; verify original model/texture redistribution rights before making a public deployment.
