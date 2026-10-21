@@ -137,7 +137,7 @@ function updateLegacyRig(t){
  // Limit mesh updates to ~20fps to keep mobile AR responsive.
  if(t-lastRigFrame<.05)return;
  lastRigFrame=t;
- skeleton.head.angle=Math.sin(t*.85)*.085+Math.sin(t*.29)*.035;
+ skeleton.head.angle=Math.sin(t*.8)*.075+Math.sin(t*.31)*.018;
  skeleton.tail.angle=Math.sin(t*1.2+.9)*.12;
  const headSin=Math.sin(skeleton.head.angle),headCos=Math.cos(skeleton.head.angle);
  const tailSin=Math.sin(skeleton.tail.angle),tailCos=Math.cos(skeleton.tail.angle);
@@ -148,10 +148,10 @@ function updateLegacyRig(t){
    const hw=w[i*2],tw=w[i*2+1];
    // Soft, weighted hinge rotations around the vertical (Y) axis.
    const hz=z-headHinge,tx=z-tailHinge;
-   const headX=x*headCos-hz*headSin,headZ=headHinge+x*headSin+hz*headCos;
+   const headY=y*headCos-hz*headSin,headZ=headHinge+y*headSin+hz*headCos;
    const tailX=x*tailCos-tx*tailSin,tailZ=tailHinge+x*tailSin+tx*tailCos;
-   out[j]=x+(headX-x)*hw+(tailX-x)*tw;
-   out[j+1]=y;
+   out[j]=x+(tailX-x)*tw;
+   out[j+1]=y+(headY-y)*hw;
    out[j+2]=z+(headZ-z)*hw+(tailZ-z)*tw;
   }
   p.attr.needsUpdate=true;
@@ -166,17 +166,32 @@ legacyRigUpdate=updateLegacyRig;
 
 document.getElementById('size').onclick=()=>{mini=!mini;applySize()};
 document.getElementById('rotate').onclick=()=>{dinosaur.rotation.y+=Math.PI/4};
-document.getElementById('reset').onclick=()=>{dinosaur.rotation.set(0,0,0);dinosaur.position.set(0,0,0);placed=false;document.body.classList.remove('ar-placed');placeButton.textContent='🦖 Place T-Rex';if(renderer.xr.isPresenting)dinosaur.visible=false;else{camera.position.set(7,4.3,10);controls.target.set(0,1.8,0);controls.update()}};
-const reticle=new THREE.Mesh(new THREE.RingGeometry(.13,.18,40),new THREE.MeshBasicMaterial({color:0xb8e0ab,side:THREE.DoubleSide}));reticle.rotation.x=-Math.PI/2;reticle.matrixAutoUpdate=false;reticle.visible=false;scene.add(reticle);
+document.getElementById('reset').onclick=()=>{dinosaur.rotation.set(0,0,0);dinosaur.position.set(0,0,0);placed=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalScale.scale.setScalar(1);document.body.classList.remove('ar-placed');placeButton.textContent='🦖 Place T-Rex';if(renderer.xr.isPresenting)dinosaur.visible=false;else{camera.position.set(7,4.3,10);controls.target.set(0,1.8,0);controls.update()}};
+function makePortal(){
+ const portal=new THREE.Group();
+ const bronze=new THREE.MeshBasicMaterial({color:0xc5a65d,side:THREE.DoubleSide,transparent:true,opacity:.9,depthWrite:false});
+ const jade=new THREE.MeshBasicMaterial({color:0x7ce7bb,side:THREE.DoubleSide,transparent:true,opacity:.75,depthWrite:false});
+ const dark=new THREE.MeshBasicMaterial({color:0x273a2c,side:THREE.DoubleSide,transparent:true,opacity:.65,depthWrite:false});
+ function ring(inner,outer,y,mat){const mesh=new THREE.Mesh(new THREE.RingGeometry(inner,outer,64),mat);mesh.rotation.x=-Math.PI/2;mesh.position.y=y;portal.add(mesh)}
+ ring(.04,.38,.005,dark);ring(.3,.345,.012,bronze);ring(.23,.25,.016,jade);ring(.13,.15,.02,bronze);
+ const ticks=new THREE.Group();portal.add(ticks);
+ for(let i=0;i<24;i++){const a=i*Math.PI/12,r=.285;const mark=new THREE.Mesh(new THREE.BoxGeometry(i%3===0?.035:.018,.006,.009),bronze);mark.position.set(Math.cos(a)*r,.025,Math.sin(a)*r);mark.rotation.y=-a;ticks.add(mark)}
+ const energy=new THREE.Mesh(new THREE.CircleGeometry(.225,48),new THREE.MeshBasicMaterial({color:0x65efbf,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide}));energy.rotation.x=-Math.PI/2;energy.position.y=.03;portal.add(energy);
+ portal.userData={ticks,energy};return portal;
+}
+const reticle=makePortal();reticle.visible=false;scene.add(reticle);
+const arrivalPortal=makePortal();arrivalPortal.visible=false;scene.add(arrivalPortal);
+let arrivalStart=-1;const arrivalDuration=1700;
+const arrivalScale=new THREE.Group();dinosaur.remove(idlePivot);arrivalScale.add(idlePivot);dinosaur.add(arrivalScale);
 let hitTestSource=null,referenceSpace=null;const placeButton=document.getElementById('place');const tip=document.getElementById('reticle-tip');
 const arButton=ARButton.createButton(renderer,{requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay'],domOverlay:{root:document.getElementById('ui')}});
 document.getElementById('ar-slot').appendChild(arButton);
 arButton.textContent=arButton.textContent==='START AR'?'Start AR':arButton.textContent;
 renderer.xr.addEventListener('sessionstart',async()=>{
- document.body.classList.add('ar-active');document.body.classList.remove('ar-placed');tip.textContent='Scan the ground, then press Place T-Rex';placeButton.textContent='🦖 Place T-Rex';scene.background=null;ground.visible=false;grid.visible=false;controls.enabled=false;placed=false;dinosaur.visible=false;
+ document.body.classList.add('ar-active');document.body.classList.remove('ar-placed');tip.textContent='Scan the ground, then press Place T-Rex';placeButton.textContent='🦖 Place T-Rex';scene.background=null;ground.visible=false;grid.visible=false;controls.enabled=false;placed=false;arrivalStart=-1;arrivalPortal.visible=false;dinosaur.visible=false;
  try{const session=renderer.xr.getSession();referenceSpace=await session.requestReferenceSpace('viewer');hitTestSource=await session.requestHitTestSource({space:referenceSpace});}catch(e){tip.textContent='Surface tracking unavailable. You can still place the T-Rex in front of you.'}
 });
-renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=new THREE.Color('#162521');ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;placed=false});
+renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=new THREE.Color('#162521');ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;placed=false});
 function placeDinosaur(){
  if(!renderer.xr.isPresenting||!loaded){tip.textContent='The dinosaur is still loading. Please wait.';return}
  if(reticle.visible){dinosaur.position.setFromMatrixPosition(reticle.matrix)}
@@ -186,7 +201,7 @@ function placeDinosaur(){
   dinosaur.position.copy(xrCamera.position).addScaledVector(direction,3);
   dinosaur.position.y=Math.max(0,dinosaur.position.y-1.3);
  }
- dinosaur.rotation.y=0;dinosaur.visible=true;placed=true;document.body.classList.add('ar-placed');placeButton.textContent='↗ Move Dino';tip.textContent='';
+ dinosaur.rotation.y=0;dinosaur.visible=true;placed=true;arrivalStart=performance.now();arrivalScale.scale.setScalar(.015);arrivalPortal.position.copy(dinosaur.position);arrivalPortal.visible=true;arrivalPortal.scale.setScalar(mini?1:2.2);document.body.classList.add('ar-placed');placeButton.textContent='↗ Move Dino';tip.textContent='';
 }
 placeButton.addEventListener('click',placeDinosaur);
 renderer.domElement.addEventListener('click',()=>{if(renderer.xr.isPresenting)placeDinosaur()});
@@ -196,11 +211,19 @@ renderer.setAnimationLoop((time,frame)=>{
  if(loaded&&!reducedMotion.matches){
   if(!usingFallback&&legacyRigUpdate)legacyRigUpdate(t);
   // Low-amplitude idle motion keeps the static legacy model grounded.
-  idlePivot.rotation.y=Math.sin(t*.62)*.045+Math.sin(t*.17)*.035;
-  idlePivot.rotation.z=Math.sin(t*.95)*.012;
+  idlePivot.rotation.y=Math.sin(t*.28)*.008;
+  idlePivot.rotation.z=Math.sin(t*.9)*.003;
   idlePivot.scale.set(1+Math.sin(t*1.7)*.006,1+Math.sin(t*1.7)*.004,1+Math.sin(t*1.7)*.008);
  }else{idlePivot.rotation.set(0,0,0);idlePivot.scale.set(1,1,1)}
  if(renderer.xr.isPresenting&&frame&&hitTestSource){const hits=frame.getHitTestResults(hitTestSource);if(hits.length){const pose=hits[0].getPose(renderer.xr.getReferenceSpace());if(pose){reticle.visible=true;reticle.matrix.fromArray(pose.transform.matrix)}}else reticle.visible=false}
+ if(reticle.visible){reticle.userData.ticks.rotation.y=t*.35;reticle.userData.energy.material.opacity=.12+Math.sin(t*3)*.06}
+ if(arrivalPortal.visible){arrivalPortal.userData.ticks.rotation.y=-t*.9;arrivalPortal.userData.energy.material.opacity=.13+Math.sin(t*4)*.07}
+ if(arrivalStart>=0){
+  const progress=Math.min(1,(performance.now()-arrivalStart)/arrivalDuration);
+  const eased=1-Math.pow(1-progress,3);
+  arrivalScale.scale.setScalar(.015+.985*eased);
+  if(progress>=1){arrivalStart=-1;arrivalScale.scale.setScalar(1)}
+ }
  if(!renderer.xr.isPresenting)controls.update();
  renderer.render(scene,camera);
 });
