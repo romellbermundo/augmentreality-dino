@@ -179,7 +179,7 @@ function makePortal(){
  const energy=new THREE.Mesh(new THREE.CircleGeometry(.225,48),new THREE.MeshBasicMaterial({color:0x65efbf,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide}));energy.rotation.x=-Math.PI/2;energy.position.y=.03;portal.add(energy);
  portal.userData={ticks,energy};return portal;
 }
-const reticle=makePortal();reticle.visible=false;scene.add(reticle);
+const reticle=makePortal();reticle.matrixAutoUpdate=false;reticle.visible=false;scene.add(reticle);
 const arrivalPortal=makePortal();arrivalPortal.visible=false;scene.add(arrivalPortal);
 let arrivalStart=-1;const arrivalDuration=1700;
 const arrivalScale=new THREE.Group();dinosaur.remove(idlePivot);arrivalScale.add(idlePivot);dinosaur.add(arrivalScale);
