@@ -40,6 +40,35 @@ const controls=new OrbitControls(camera,renderer.domElement);controls.target.set
 const dinosaur=new THREE.Group();scene.add(dinosaur);
 let loaded=false,mini=false,placed=false;const BASE_HEIGHT=4.1;
 function applySize(){dinosaur.scale.setScalar(mini?.16:1);document.getElementById('size').textContent=mini?'Size: Mini':'Size: Life-sized'}
+// Always provide a visible, lightweight dinosaur while the legacy OBJ loads.
+function createFallbackRex(){
+ const group=new THREE.Group();
+ const skin=new THREE.MeshStandardMaterial({color:0x688b53,roughness:.85});
+ const belly=new THREE.MeshStandardMaterial({color:0xa3a679,roughness:.9});
+ const dark=new THREE.MeshStandardMaterial({color:0x283b25,roughness:.9});
+ const ivory=new THREE.MeshStandardMaterial({color:0xece4c5,roughness:.6});
+ function ellipsoid(parent,x,y,z,sx,sy,sz,material){const m=new THREE.Mesh(new THREE.SphereGeometry(1,18,12),material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);parent.add(m);return m}
+ function segment(parent,a,b,r1,r2,material){const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b),dir=end.clone().sub(start);const m=new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,dir.length(),12),material);m.position.copy(start).add(end).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());parent.add(m)}
+ ellipsoid(group,0,2.1,0,1.5,.85,.7,skin);
+ ellipsoid(group,.5,1.85,.02,.9,.53,.64,belly);
+ segment(group,[.9,2.4,0],[1.65,3.15,0],.57,.43,skin);
+ ellipsoid(group,2.05,3.37,0,.9,.49,.53,skin);
+ ellipsoid(group,2.55,3.07,0,.73,.21,.45,skin);
+ ellipsoid(group,2.55,2.95,0,.65,.1,.39,belly);
+ for(const z of [-.44,.44]){ellipsoid(group,2.2,3.57,z,.095,.09,.06,dark);
+  segment(group,[-.7,1.8,z*1.1],[-.85,.85,z*1.15],.36,.22,skin);
+  segment(group,[-.85,.85,z*1.15],[-.7,.17,z*1.25],.23,.16,skin);
+  ellipsoid(group,-.47,.16,z*1.25,.42,.15,.25,dark);
+  segment(group,[1.1,2.4,z*.8],[1.58,1.9,z*.9],.19,.11,skin);
+  segment(group,[1.58,1.9,z*.9],[1.95,1.91,z*.9],.1,.065,skin);
+  for(let i=0;i<5;i++)segment(group,[2.12+i*.2,3.03,z*.88],[2.15+i*.2,2.87,z*.88],.055,.008,ivory);
+ }
+ let last=[-1.05,2.32,0];for(let i=0;i<7;i++){const next=[-1.55-i*.43,2.34+i*.075,0];segment(group,last,next,.55-i*.075,Math.max(.025,.47-i*.073),skin);last=next}
+ return group;
+}
+const fallback=createFallbackRex();dinosaur.add(fallback);let usingFallback=true;
+function ready(message){loaded=true;applySize();status.textContent=message;document.getElementById('size').disabled=false}
+ready('T-Rex ready! Explore in 3D or tap Start AR.');
 const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');materialLoader.load('t-rexaur.mtl',materials=>{
  materials.preload();const loader=new OBJLoader();loader.setMaterials(materials);loader.load('./assets/psone/t-rexaur.obj',model=>{
   // The original game asset uses a large, arbitrary unit scale.
@@ -48,10 +77,10 @@ const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');m
   if(!Number.isFinite(dims.y)||dims.y<=0)throw new Error('Invalid dinosaur geometry');
   model.position.sub(center);model.position.y+=dims.y/2;
   const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
-  dinosaur.add(normalized);loaded=true;applySize();status.textContent='Your T-Rex is ready! Explore in 3D or tap Start AR.';document.getElementById('size').disabled=false;
- },undefined,()=>status.textContent='The dinosaur model could not load. Please refresh.');
-},undefined,()=>status.textContent='Dinosaur textures could not load. Please refresh.');
-document.getElementById('size').disabled=true;
+  dinosaur.remove(fallback);dinosaur.add(normalized);usingFallback=false;ready('Original T-Rex model loaded! Tap Start AR to place it.');
+ },undefined,error=>{console.warn('Legacy OBJ failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
+},undefined,error=>{console.warn('Legacy materials failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
+
 document.getElementById('size').onclick=()=>{mini=!mini;applySize()};
 document.getElementById('rotate').onclick=()=>{dinosaur.rotation.y+=Math.PI/4};
 document.getElementById('reset').onclick=()=>{dinosaur.rotation.set(0,0,0);dinosaur.position.set(0,0,0);placed=false;if(renderer.xr.isPresenting)dinosaur.visible=false;else{camera.position.set(7,4.3,10);controls.target.set(0,1.8,0);controls.update()}};
