@@ -229,6 +229,7 @@ const arrivalScale=new THREE.Group();dinosaur.remove(idlePivot);arrivalScale.add
 let hitTestSource=null,referenceSpace=null,surfaceFound=false,lastSurfaceHit=-Infinity,scanStart=0;
 const surfaceTarget=new THREE.Vector3(),surfaceNormal=new THREE.Vector3(),surfaceQuaternion=new THREE.Quaternion();
 const trackingGraceMs=1100,approximateAfterMs=6500;
+const estimatedFloorDrop=1.55; // standing phone-to-floor estimate in metres
 const hitMatrix=new THREE.Matrix4();const placeButton=document.getElementById('place');const tip=document.getElementById('reticle-tip');
 const arButton=ARButton.createButton(renderer,{requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay'],domOverlay:{root:document.getElementById('ui')}});
 document.getElementById('ar-slot').appendChild(arButton);
@@ -243,10 +244,9 @@ function placeDinosaur(){
  if(placed||resetStart>=0||portalOpeningStart>=0)return;
  if(surfaceFound&&reticle.visible){dinosaur.position.copy(surfaceTarget)}
  else{
-  // Simple fallback when the camera cannot identify a floor.
-  const xrCamera=renderer.xr.getCamera();const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);
-  dinosaur.position.copy(xrCamera.position).addScaledVector(direction,3);
-  dinosaur.position.y=Math.max(0,dinosaur.position.y-1.3);
+  // Use the same floor-level estimate shown by the portal. Do not
+  // recalculate a camera-forward point that can land at desk height.
+  dinosaur.position.copy(reticle.position);
  }
  dinosaur.rotation.y=0;rotationFrom=0;rotationTo=0;rotationStart=-1;dinosaur.visible=true;placed=true;arrivalStart=performance.now();portalCloseStart=arrivalStart+arrivalDuration;arrivalPortal.userData.sparks.visible=true;arrivalScale.scale.setScalar(.015);arrivalPortal.position.copy(dinosaur.position);arrivalPortal.visible=true;arrivalPortal.scale.setScalar(mini?1:2.2);document.body.classList.add('ar-placed');placeButton.disabled=true;placeButton.style.display='none';tip.textContent='';
 }
@@ -295,12 +295,15 @@ renderer.setAnimationLoop((time,frame)=>{
    const allowApproximate=now-scanStart>approximateAfterMs;
    if(allowApproximate){
     const xrCamera=renderer.xr.getCamera();
+    // Project the phone's viewing ray onto an estimated horizontal
+    // floor plane, rather than placing the portal at eye/desk height.
     const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);
-    direction.y=0;
-    if(direction.lengthSq()<.001)direction.set(0,0,-1);
-    direction.normalize();
-    reticle.position.copy(xrCamera.position).addScaledVector(direction,2);
-    reticle.position.y=Math.max(0,xrCamera.position.y-1.3);
+    const floorY=xrCamera.position.y-estimatedFloorDrop;
+    const distance=direction.y<-.12
+      ?THREE.MathUtils.clamp((floorY-xrCamera.position.y)/direction.y,.65,5)
+      :2;
+    reticle.position.copy(xrCamera.position).addScaledVector(direction,distance);
+    reticle.position.y=floorY;
     reticle.quaternion.identity();reticle.visible=true;
    }else reticle.visible=false;
   }
@@ -308,7 +311,7 @@ renderer.setAnimationLoop((time,frame)=>{
   placeButton.disabled=resetStart>=0||portalOpeningStart>=0||(!surfaceFound&&!approximate);
   placeButton.textContent=surfaceFound?'🦖 Place T-Rex':approximate?'Place Approx.':'Scanning…';
   tip.textContent=surfaceFound?'Surface found — tap Place T-Rex':
-   approximate?'No floor detected. Approximate placement is available.':
+   approximate?'Floor estimated from phone height — not surface detected.':
    'Scan a well-lit, textured floor slowly…';
  }
  if(placed||resetStart>=0)reticle.visible=false;
