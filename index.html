@@ -98,10 +98,12 @@ const controls=new OrbitControls(camera,renderer.domElement);controls.target.set
 const dinosaur=new THREE.Group();scene.add(dinosaur);
 const idlePivot=new THREE.Group();dinosaur.add(idlePivot);
 let loaded=false,mini=true,placed=false;const BASE_HEIGHT=4.1;
-let sizeFrom=.16,sizeTo=.16,sizeStart=-1;
+// Preserve the reference screenshot's initial left-facing dinosaur view.
+const INITIAL_DINO_YAW=0;
+let sizeFrom=.32,sizeTo=.32,sizeStart=-1;
 const sizeDuration=420;
 function applySize(animate=false){
- const target=mini?.16:1;
+ const target=mini?.32:2;
  if(animate){
   sizeFrom=dinosaur.scale.x;
   sizeTo=target;
@@ -206,7 +208,7 @@ function restoreDinoOpacity(){
 }
 function finishReset(){
  restoreDinoOpacity();
- dinosaur.rotation.set(0,0,0);rotationFrom=0;rotationTo=0;rotationStart=-1;
+ dinosaur.rotation.set(0,INITIAL_DINO_YAW,0);rotationFrom=INITIAL_DINO_YAW;rotationTo=INITIAL_DINO_YAW;rotationStart=-1;
  dinosaur.position.set(0,0,0);placed=false;surfaceFound=false;lastSurfaceHit=-Infinity;scanStart=performance.now();
  arrivalStart=-1;arrivalPortal.visible=false;arrivalScale.scale.setScalar(1);
  document.body.classList.remove('ar-placed');
@@ -288,7 +290,7 @@ function placeDinosaur(){
   // recalculate a camera-forward point that can land at desk height.
   dinosaur.position.copy(reticle.position);
  }
- dinosaur.rotation.y=0;rotationFrom=0;rotationTo=0;rotationStart=-1;dinosaur.visible=true;placed=true;arrivalStart=performance.now();portalCloseStart=arrivalStart+arrivalDuration;arrivalPortal.userData.sparks.visible=true;arrivalScale.scale.setScalar(.015);arrivalPortal.position.copy(dinosaur.position);arrivalPortal.visible=true;arrivalPortal.scale.setScalar(mini?1:2.2);document.body.classList.add('ar-placed');placeButton.disabled=true;placeButton.style.display='none';tip.textContent='';
+ dinosaur.rotation.y=INITIAL_DINO_YAW;rotationFrom=INITIAL_DINO_YAW;rotationTo=INITIAL_DINO_YAW;rotationStart=-1;dinosaur.visible=true;placed=true;arrivalStart=performance.now();portalCloseStart=arrivalStart+arrivalDuration;arrivalPortal.userData.sparks.visible=true;arrivalScale.scale.setScalar(.015);arrivalPortal.position.copy(dinosaur.position);arrivalPortal.visible=true;arrivalPortal.scale.setScalar(mini?1:2.2);document.body.classList.add('ar-placed');placeButton.disabled=true;placeButton.style.display='none';tip.textContent='';
 }
 placeButton.addEventListener('click',placeDinosaur);
 renderer.domElement.addEventListener('click',()=>{if(renderer.xr.isPresenting)placeDinosaur()});
