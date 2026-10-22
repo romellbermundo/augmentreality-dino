@@ -70,7 +70,20 @@ const controls=new OrbitControls(camera,renderer.domElement);controls.target.set
 const dinosaur=new THREE.Group();scene.add(dinosaur);
 const idlePivot=new THREE.Group();dinosaur.add(idlePivot);
 let loaded=false,mini=true,placed=false;const BASE_HEIGHT=4.1;
-function applySize(){dinosaur.scale.setScalar(mini?.16:1);document.getElementById('size').textContent=mini?'Mini':'Giant'}
+let sizeFrom=.16,sizeTo=.16,sizeStart=-1;
+const sizeDuration=420;
+function applySize(animate=false){
+ const target=mini?.16:1;
+ if(animate){
+  sizeFrom=dinosaur.scale.x;
+  sizeTo=target;
+  sizeStart=performance.now();
+ }else{
+  sizeFrom=sizeTo=target;sizeStart=-1;
+  dinosaur.scale.setScalar(target);
+ }
+ document.getElementById('size').textContent=mini?'Mini':'Giant';
+}
 // Always provide a visible, lightweight dinosaur while the legacy OBJ loads.
 function createFallbackRex(){
  const group=new THREE.Group();
@@ -109,18 +122,20 @@ const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');m
   model.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(model),dims=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
   if(!Number.isFinite(dims.y)||dims.y<=0)throw new Error('Invalid dinosaur geometry');
-  model.position.sub(center);model.position.y+=dims.y/2;
+  // Box3 center is in world space after the 180-degree rotation. Convert
+  // it back into the model parent's coordinates before offsetting the mesh.
+  model.position.set(-center.x,-center.y+dims.y/2,-center.z);
   // The OBJ has no skin weights or bones. The previous vertex rig used
   // world-space limits on local-space vertices and distorted unrelated parts.
   // Keep the original geometry intact; animate a grounded model pivot instead.
   legacyRigUpdate=null;
   const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
 legacyRigUpdate=null;
-  idlePivot.remove(fallback);idlePivot.add(normalized);usingFallback=false;ready('Original T-Rex model loaded! Tap Start AR to place it.');
+  restoreDinoOpacity();idlePivot.remove(fallback);idlePivot.add(normalized);usingFallback=false;ready('Original T-Rex model loaded! Tap Start AR to place it.');
  },undefined,error=>{console.warn('Legacy OBJ failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
 },undefined,error=>{console.warn('Legacy materials failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
 
-document.getElementById('size').onclick=()=>{mini=!mini;applySize()};
+document.getElementById('size').onclick=()=>{mini=!mini;applySize(true)};
 let rotationFrom=0,rotationTo=0,rotationStart=-1;
 const rotationDuration=280;
 document.getElementById('rotate').onclick=()=>{
@@ -320,6 +335,12 @@ renderer.setAnimationLoop((time,frame)=>{
    placeButton.disabled=false;placeButton.style.display='';
    placeButton.textContent='🦖 Place T-Rex';
   }
+ }
+ if(sizeStart>=0){
+  const u=Math.min(1,(performance.now()-sizeStart)/sizeDuration);
+  const eased=u*u*(3-2*u);
+  dinosaur.scale.setScalar(sizeFrom+(sizeTo-sizeFrom)*eased);
+  if(u>=1){sizeStart=-1;dinosaur.scale.setScalar(sizeTo)}
  }
  if(rotationStart>=0){
   const u=Math.min(1,(performance.now()-rotationStart)/rotationDuration);
