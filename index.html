@@ -60,7 +60,35 @@ import {OBJLoader} from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm
 import {MTLLoader} from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/MTLLoader.js';
 import {ARButton} from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/webxr/ARButton.js';
 const stage=document.getElementById('stage'),status=document.getElementById('status');
-const scene=new THREE.Scene();scene.background=new THREE.Color('#162521');
+const scene=new THREE.Scene();
+// Animated Matrix-style digital rain is used only in the 3D preview.
+// The existing ground and grid stay untouched, and AR keeps a transparent scene.
+const rainCanvas=document.createElement('canvas');
+rainCanvas.width=768;rainCanvas.height=512;
+const rainCtx=rainCanvas.getContext('2d',{alpha:false});
+const rainTexture=new THREE.CanvasTexture(rainCanvas);
+rainTexture.colorSpace=THREE.SRGBColorSpace;
+const rainColumns=Math.floor(rainCanvas.width/16);
+const rainDrops=Array.from({length:rainColumns},()=>Math.random()*rainCanvas.height/16);
+const rainGlyphs='01アイウエオカキクケコサシスセソタチツテト';
+let lastRainFrame=0;
+function animateDigitalRain(now){
+ if(now-lastRainFrame<45)return;
+ lastRainFrame=now;
+ rainCtx.fillStyle='rgba(4,16,11,.16)';
+ rainCtx.fillRect(0,0,rainCanvas.width,rainCanvas.height);
+ rainCtx.font='15px monospace';
+ for(let i=0;i<rainColumns;i++){
+  const x=i*16,y=rainDrops[i]*16;
+  rainCtx.fillStyle=Math.random()>.91?'#d5ffe5':'#29b96a';
+  rainCtx.fillText(rainGlyphs[Math.floor(Math.random()*rainGlyphs.length)],x,y);
+  if(y>rainCanvas.height&&Math.random()>.975)rainDrops[i]=0;
+  else rainDrops[i]+=.34+((i*7)%9)*.055;
+ }
+ rainTexture.needsUpdate=true;
+}
+rainCtx.fillStyle='#04100b';rainCtx.fillRect(0,0,rainCanvas.width,rainCanvas.height);
+scene.background=rainTexture;
 const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.01,150);camera.position.set(7,4.3,10);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.xr.enabled=true;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.92;stage.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xd9e1d2,0x52584b,1.35));const sun=new THREE.DirectionalLight(0xffedcf,1.25);sun.position.set(5,11,7);scene.add(sun);
@@ -237,7 +265,7 @@ renderer.xr.addEventListener('sessionstart',async()=>{
  document.body.classList.add('ar-active');document.body.classList.remove('ar-placed');tip.textContent='Scan the ground, then press Place T-Rex';placeButton.textContent='🦖 Place T-Rex';scene.background=null;ground.visible=false;grid.visible=false;controls.enabled=false;placed=false;resetStart=-1;portalOpeningStart=-1;restoreDinoOpacity();surfaceFound=false;lastSurfaceHit=-Infinity;scanStart=performance.now();reticle.visible=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalPortal.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';dinosaur.visible=false;
  try{const session=renderer.xr.getSession();referenceSpace=await session.requestReferenceSpace('viewer');hitTestSource=await session.requestHitTestSource({space:referenceSpace});}catch(e){tip.textContent='Surface tracking unavailable on this device or session.'}
 });
-renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=new THREE.Color('#162521');ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;surfaceFound=false;lastSurfaceHit=-Infinity;placed=false;resetStart=-1;portalOpeningStart=-1;restoreDinoOpacity();reticle.scale.setScalar(1)});
+renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=rainTexture;ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;surfaceFound=false;lastSurfaceHit=-Infinity;placed=false;resetStart=-1;portalOpeningStart=-1;restoreDinoOpacity();reticle.scale.setScalar(1)});
 function placeDinosaur(){
  if(!renderer.xr.isPresenting||!loaded){tip.textContent='The dinosaur is still loading. Please wait.';return}
  if(placed||resetStart>=0||portalOpeningStart>=0||!surfaceFound)return;
@@ -351,7 +379,7 @@ renderer.setAnimationLoop((time,frame)=>{
   dinosaur.rotation.y=rotationFrom+(rotationTo-rotationFrom)*e;
   if(u>=1){rotationStart=-1;rotationFrom=rotationTo}
  }
- if(!renderer.xr.isPresenting)controls.update();
+ if(!renderer.xr.isPresenting){animateDigitalRain(performance.now());controls.update();}
  renderer.render(scene,camera);
 });
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
