@@ -49,7 +49,7 @@ body.ar-placed #controls #place{background:linear-gradient(180deg,#596540,#28361
 <div id="ui">
 <header><div><h1>🦖 T-REX ENCOUNTER</h1><p>A prehistoric world in your hands</p></div></header>
 <div id="status" role="status">Loading your dinosaur…</div>
-<div><div id="controls"><div id="ar-slot"></div><button id="place" type="button">Place Dino</button><button class="secondary" id="size" type="button">Mini</button><button class="secondary" id="rotate" type="button">↻ Rotate</button><button class="secondary" id="reset" type="button">Reset</button></div><p id="help">Drag to rotate • Pinch to zoom • In AR, scan the ground and tap to place</p></div>
+<div><div id="controls"><div id="ar-slot"></div><button id="place" type="button">Place Dino</button><button class="secondary" id="size" type="button">Mini</button><button class="secondary" id="rotate-left" type="button" aria-label="Rotate left 45 degrees">↶ Left</button><button class="secondary" id="rotate-right" type="button" aria-label="Rotate right 45 degrees">Right ↷</button><button class="secondary" id="reset" type="button">Reset</button></div><p id="help">Drag to rotate • Pinch to zoom • In AR, scan the ground and tap to place</p></div>
 </div>
 <div id="reticle-tip">Move your phone slowly to scan the ground, then press Place T-Rex</div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
@@ -138,24 +138,19 @@ legacyRigUpdate=null;
 document.getElementById('size').onclick=()=>{mini=!mini;applySize(true)};
 let rotationFrom=0,rotationTo=0,rotationStart=-1;
 const rotationDuration=280;
-document.getElementById('rotate').onclick=()=>{
+function rotateDinosaur(direction){
  const now=performance.now();
- if(arrivalStart===-2){
-  const initial=mini?1:2.2;
-  const elapsed=performance.now()-(portalCloseStart||performance.now());
-  const u=Math.min(1,elapsed/650);
-  arrivalPortal.scale.setScalar(Math.max(.001,initial*(1-u*u*(3-2*u))));
-  if(u>=1){arrivalPortal.visible=false;arrivalStart=-1}
- }
  if(rotationStart>=0){
   const u=Math.min(1,(now-rotationStart)/rotationDuration);
-  const e=u*u*(3-2*u);
-  dinosaur.rotation.y=rotationFrom+(rotationTo-rotationFrom)*e;
+  const eased=u*u*(3-2*u);
+  dinosaur.rotation.y=rotationFrom+(rotationTo-rotationFrom)*eased;
  }
  rotationFrom=dinosaur.rotation.y;
- rotationTo+=Math.PI/4;
+ rotationTo+=direction*Math.PI/4;
  rotationStart=now;
-};
+}
+document.getElementById('rotate-left').onclick=()=>rotateDinosaur(-1);
+document.getElementById('rotate-right').onclick=()=>rotateDinosaur(1);
 // Reset is a short reverse time-travel sequence, not an instant teleport.
 let resetStart=-1,portalOpeningStart=-1;
 const dissolveDuration=750,portalOpeningDuration=650;
