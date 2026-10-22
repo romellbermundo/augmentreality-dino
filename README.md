@@ -8,11 +8,11 @@
 
 *Bring a giant dinosaur out of the screen and into your surroundings.*
 
-[📦 Source Code](https://github.com/romellbermundo/augmentreality-dino)
+[🌐 Live Website](https://augmentreality-dino.pages.dev/) · [📦 Source Code](https://github.com/romellbermundo/augmentreality-dino)
 
 </div>
 
-> **Deployment note:** A public live website has not yet been configured or verified. AR requires HTTPS, a compatible device and browser, and permission to use augmented reality. The existing T-Rexaur game model is a prototype asset, not a scientifically accurate Tyrannosaurus rex.
+> **Compatibility note:** The website is published on Cloudflare Pages. AR requires HTTPS, a compatible device and browser, and permission to use augmented reality. The original T-Rexaur game model is a prototype asset, not a scientifically accurate Tyrannosaurus rex.
 
 ---
 
@@ -70,7 +70,7 @@ The current dinosaur is the original T-Rexaur asset already present in the repos
    MEET YOUR T-REX
        │
        ▼
- RESIZE / ROTATE / RESET
+ MINI ↔ GIANT / LEFT ↔ RIGHT / RESET
 ```
 
 The 3D viewer uses Three.js. On supported Android devices, WebXR hit testing identifies surfaces so the dinosaur can be placed in the camera view. Unsupported browsers continue to use the standard 3D viewer.
@@ -85,7 +85,7 @@ View the existing textured dinosaur model in a dedicated scene rather than an as
 
 ### 📱 Augmented Reality Placement
 
-On compatible Android phones, enter WebXR AR, scan a horizontal surface, and tap the placement indicator to position the dinosaur in the real world.
+On compatible Android phones, enter WebXR AR, scan a horizontal surface, and use the Place T-Rex button to position the dinosaur in the real world.
 
 ### 🔍 Interactive 3D Viewer
 
@@ -93,11 +93,15 @@ Drag to orbit around the dinosaur and pinch or scroll to zoom. Explore without e
 
 ### 📏 Life-sized and Miniature Modes
 
-Switch between an approximately 4.1-metre-tall model and a smaller tabletop-scale version. Size is approximate and intended for demonstration.
+Switch between an approximately 4.1-metre-tall model and a smaller tabletop-scale version. The Mini/Giant switch animates smoothly. Size is approximate and intended for demonstration.
 
-### 🔄 Rotate and Reset
+### 🔄 Left / Right Rotation and Reset
 
-Turn the dinosaur in increments or restore its original position and orientation.
+Use separate **↶ Left** and **Right ↷** buttons to turn the dinosaur 45° in either direction with a short, smooth transition. **Reset** dissolves the dinosaur and reopens the placement portal; in AR, place it again at a new location.
+
+### ✨ Time-travel Portal
+
+A glowing portal with animated particles marks the placement area. The dinosaur materializes through it, then the particles disappear and the portal shrinks away. Reset fades out the dinosaur and expands the portal again for another encounter. Once placed, the dinosaur cannot be moved without resetting.
 
 ### 🌿 Focused Interface
 
@@ -127,7 +131,7 @@ For phone-based AR, publish the site over HTTPS; a computer's local HTTP address
 
 ### Option B — Open the published website
 
-After deploying the repository to a static host, open its HTTPS address in a supported mobile browser. On compatible Android devices, choose **Start AR**, allow the required permissions, move your phone to detect the ground, and tap to place the dinosaur.
+Open the live site at **https://augmentreality-dino.pages.dev/** in a supported mobile browser. On compatible Android devices, choose **Start AR**, allow the required permissions, move your phone to detect the ground, and tap to place the dinosaur.
 
 **Compatibility:** WebXR immersive AR and hit testing require a compatible Android device, browser, and AR services. iOS Safari does not support this implementation's WebXR AR workflow.
 
@@ -145,7 +149,7 @@ A suitable option is **Cloudflare Pages**:
 4. Deploy and open the generated HTTPS address.
 5. Test both the 3D viewer and AR on a compatible phone.
 
-The project does not currently include a verified automatic deployment configuration or a confirmed public live URL. Do not assume that merely pushing to GitHub makes the AR experience accessible online.
+The project is published through Cloudflare Pages at **https://augmentreality-dino.pages.dev/**, with GitHub-connected deployments. Allow deployment to complete before testing recent changes.
 
 ---
 
@@ -176,7 +180,7 @@ The current interface and rendering logic live in `index.html`. The `assets/pson
 | Model loading | Three.js OBJLoader and MTLLoader |
 | Interface | HTML, CSS, JavaScript |
 | Asset format | OBJ, MTL, PNG |
-| Hosting | Static HTTPS hosting (deployment pending) |
+| Hosting | Cloudflare Pages (HTTPS) |
 | Version control | Git and GitHub |
 
 ---
@@ -223,6 +227,13 @@ The interface is designed as a quiet frame around the dinosaur: deep forest tone
 ---
 
 ## 🏷️ Version History
+
+### v2.1.0 — Portal animations and dual rotation
+
+- Added separate smooth left/right 45° rotation controls and animated Mini/Giant scaling.
+- Added the glowing particle portal, dinosaur arrival animation, automatic portal closing, and animated Reset sequence.
+- Improved AR floor placement and retained fallback positioning when tracking is unavailable.
+- Updated documentation with the live Cloudflare Pages link and current interactions.
 
 ### v2.0.1 — Portfolio documentation
 
