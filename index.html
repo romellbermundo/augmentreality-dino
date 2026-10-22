@@ -228,8 +228,7 @@ let arrivalStart=-1,portalCloseStart=0;const arrivalDuration=1700;
 const arrivalScale=new THREE.Group();dinosaur.remove(idlePivot);arrivalScale.add(idlePivot);dinosaur.add(arrivalScale);
 let hitTestSource=null,referenceSpace=null,surfaceFound=false,lastSurfaceHit=-Infinity,scanStart=0;
 const surfaceTarget=new THREE.Vector3(),surfaceNormal=new THREE.Vector3(),surfaceQuaternion=new THREE.Quaternion();
-const trackingGraceMs=1100,approximateAfterMs=6500;
-const estimatedFloorDrop=1.55; // standing phone-to-floor estimate in metres
+const trackingGraceMs=1100;
 const hitMatrix=new THREE.Matrix4();const placeButton=document.getElementById('place');const tip=document.getElementById('reticle-tip');
 const arButton=ARButton.createButton(renderer,{requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay'],domOverlay:{root:document.getElementById('ui')}});
 document.getElementById('ar-slot').appendChild(arButton);
@@ -241,7 +240,7 @@ renderer.xr.addEventListener('sessionstart',async()=>{
 renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=new THREE.Color('#162521');ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;surfaceFound=false;lastSurfaceHit=-Infinity;placed=false;resetStart=-1;portalOpeningStart=-1;restoreDinoOpacity();reticle.scale.setScalar(1)});
 function placeDinosaur(){
  if(!renderer.xr.isPresenting||!loaded){tip.textContent='The dinosaur is still loading. Please wait.';return}
- if(placed||resetStart>=0||portalOpeningStart>=0)return;
+ if(placed||resetStart>=0||portalOpeningStart>=0||!surfaceFound)return;
  if(surfaceFound&&reticle.visible){dinosaur.position.copy(surfaceTarget)}
  else{
   // Use the same floor-level estimate shown by the portal. Do not
@@ -290,29 +289,12 @@ renderer.setAnimationLoop((time,frame)=>{
    surfaceFound=true;reticle.visible=true;
   }else if(!validHit){
    surfaceFound=false;
-   // Do not pretend an estimated point is a detected floor.
-   // After a short scan, offer an explicitly labeled approximate option.
-   const allowApproximate=now-scanStart>approximateAfterMs;
-   if(allowApproximate){
-    const xrCamera=renderer.xr.getCamera();
-    // Project the phone's viewing ray onto an estimated horizontal
-    // floor plane, rather than placing the portal at eye/desk height.
-    const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);
-    const floorY=xrCamera.position.y-estimatedFloorDrop;
-    const distance=direction.y<-.12
-      ?THREE.MathUtils.clamp((floorY-xrCamera.position.y)/direction.y,.65,5)
-      :2;
-    reticle.position.copy(xrCamera.position).addScaledVector(direction,distance);
-    reticle.position.y=floorY;
-    reticle.quaternion.identity();reticle.visible=true;
-   }else reticle.visible=false;
+   reticle.visible=false;
   }
-  const approximate=now-scanStart>approximateAfterMs;
-  placeButton.disabled=resetStart>=0||portalOpeningStart>=0||(!surfaceFound&&!approximate);
-  placeButton.textContent=surfaceFound?'🦖 Place T-Rex':approximate?'Place Approx.':'Scanning…';
+  placeButton.disabled=resetStart>=0||portalOpeningStart>=0||!surfaceFound;
+  placeButton.textContent=surfaceFound?'🦖 Place T-Rex':'Scanning…';
   tip.textContent=surfaceFound?'Surface found — tap Place T-Rex':
-   approximate?'Floor estimated from phone height — not surface detected.':
-   'Scan a well-lit, textured floor slowly…';
+   'Scanning for a real surface — move your phone slowly…';
  }
  if(placed||resetStart>=0)reticle.visible=false;
  function animatePortalParticles(portal,clock){const d=portal.userData;for(let i=0;i<d.count;i++){const phase=i*2.399963+clock*.75;const radius=.12+(i%9)/9*.22;const j=i*3;d.positions[j]=Math.cos(phase)*radius;d.positions[j+1]=.04+((clock*.12+i*.073)% .35);d.positions[j+2]=Math.sin(phase)*radius;}d.sparks.geometry.attributes.position.needsUpdate=true}
