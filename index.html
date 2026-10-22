@@ -254,7 +254,7 @@ const reticle=makePortal();reticle.visible=false;scene.add(reticle);
 const arrivalPortal=makePortal();arrivalPortal.visible=false;scene.add(arrivalPortal);
 let arrivalStart=-1,portalCloseStart=0;const arrivalDuration=1700;
 const arrivalScale=new THREE.Group();dinosaur.remove(idlePivot);arrivalScale.add(idlePivot);dinosaur.add(arrivalScale);
-let hitTestSource=null,referenceSpace=null,surfaceFound=false,lastSurfaceHit=-Infinity,scanStart=0;
+let hitTestSource=null,floorHitTestSource=null,referenceSpace=null,surfaceFound=false,lastSurfaceHit=-Infinity,scanStart=0;
 const surfaceTarget=new THREE.Vector3(),candidateSurface=new THREE.Vector3();
 const trackingGraceMs=1100;
 const hitMatrix=new THREE.Matrix4();const placeButton=document.getElementById('place');const tip=document.getElementById('reticle-tip');
@@ -263,9 +263,22 @@ document.getElementById('ar-slot').appendChild(arButton);
 arButton.textContent=arButton.textContent==='START AR'?'Start AR':arButton.textContent;
 renderer.xr.addEventListener('sessionstart',async()=>{
  document.body.classList.add('ar-active');document.body.classList.remove('ar-placed');tip.textContent='Scan the ground, then press Place T-Rex';placeButton.textContent='🦖 Place T-Rex';scene.background=null;ground.visible=false;grid.visible=false;controls.enabled=false;placed=false;resetStart=-1;portalOpeningStart=-1;restoreDinoOpacity();surfaceFound=false;lastSurfaceHit=-Infinity;scanStart=performance.now();reticle.visible=false;arrivalStart=-1;arrivalPortal.visible=false;arrivalPortal.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';dinosaur.visible=false;
- try{const session=renderer.xr.getSession();referenceSpace=await session.requestReferenceSpace('viewer');hitTestSource=await session.requestHitTestSource({space:referenceSpace});}catch(e){tip.textContent='Surface tracking unavailable on this device or session.'}
+ try{
+  const session=renderer.xr.getSession();
+  referenceSpace=await session.requestReferenceSpace('viewer');
+  // Aim a second ray down toward the floor as well as the screen centre.
+  // This often finds a floor sooner without using guessed placement.
+  const requests=[session.requestHitTestSource({space:referenceSpace})];
+  if(typeof XRRay!=='undefined'){
+   const floorRay=new XRRay({x:0,y:0,z:0},{x:0,y:-.48,z:-1});
+   requests.push(session.requestHitTestSource({space:referenceSpace,offsetRay:floorRay}).catch(()=>null));
+  }
+  const sources=await Promise.all(requests);
+  if(renderer.xr.getSession()!==session){sources.forEach(source=>source?.cancel());return}
+  hitTestSource=sources[0];floorHitTestSource=sources[1]||null;
+ }catch(e){tip.textContent='Surface tracking unavailable on this device or session.'}
 });
-renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=rainTexture;ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';hitTestSource?.cancel();hitTestSource=null;referenceSpace=null;surfaceFound=false;lastSurfaceHit=-Infinity;placed=false;resetStart=-1;portalOpeningStart=-1;restoreDinoOpacity();reticle.scale.setScalar(1)});
+renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=rainTexture;ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';hitTestSource?.cancel();floorHitTestSource?.cancel();hitTestSource=null;floorHitTestSource=null;referenceSpace=null;surfaceFound=false;lastSurfaceHit=-Infinity;placed=false;resetStart=-1;portalOpeningStart=-1;restoreDinoOpacity();reticle.scale.setScalar(1)});
 function placeDinosaur(){
  if(!renderer.xr.isPresenting||!loaded){tip.textContent='The dinosaur is still loading. Please wait.';return}
  if(placed||resetStart>=0||portalOpeningStart>=0||!surfaceFound)return;
@@ -294,26 +307,29 @@ renderer.setAnimationLoop((time,frame)=>{
  if(renderer.xr.isPresenting&&!placed){
   const now=performance.now();
   let validHit=false;
-  if(frame&&hitTestSource){
-   const hits=frame.getHitTestResults(hitTestSource);
-   for(const hit of hits){
-    const pose=hit.getPose(renderer.xr.getReferenceSpace());
-    if(!pose)continue;
-    hitMatrix.fromArray(pose.transform.matrix);
-    candidateSurface.setFromMatrixPosition(hitMatrix);
-    if(!Number.isFinite(candidateSurface.x+candidateSurface.y+candidateSurface.z))continue;
-    // Floor hits normally sit below the camera. Ignore nearby wall hits
-    // without relying on an orientation that varies across ARCore devices.
-    const cameraY=renderer.xr.getCamera().position.y;
-    if(candidateSurface.y>cameraY-.25)continue;
-    surfaceTarget.copy(candidateSurface);
-    validHit=true;lastSurfaceHit=now;surfaceFound=true;
-    if(!reticle.visible||reticle.position.distanceTo(surfaceTarget)>1.2)
-     reticle.position.copy(surfaceTarget);
-    else reticle.position.lerp(surfaceTarget,.24);
-    reticle.quaternion.identity();
-    reticle.visible=true;
-    break;
+  if(frame&&(hitTestSource||floorHitTestSource)){
+   // Prefer the centre ray when it hits, then try the downward floor ray.
+   const sources=[hitTestSource,floorHitTestSource];
+   for(const source of sources){
+    if(!source)continue;
+    const hits=frame.getHitTestResults(source);
+    for(const hit of hits){
+     const pose=hit.getPose(renderer.xr.getReferenceSpace());
+     if(!pose)continue;
+     hitMatrix.fromArray(pose.transform.matrix);
+     candidateSurface.setFromMatrixPosition(hitMatrix);
+     if(!Number.isFinite(candidateSurface.x+candidateSurface.y+candidateSurface.z))continue;
+     // WebXR returns genuine tracked surfaces; avoid height-based rejection
+     // that could discard a valid floor on devices with different origins.
+     surfaceTarget.copy(candidateSurface);
+     validHit=true;lastSurfaceHit=now;surfaceFound=true;
+     if(!reticle.visible||reticle.position.distanceTo(surfaceTarget)>1.2)
+      reticle.position.copy(surfaceTarget);
+     else reticle.position.lerp(surfaceTarget,.24);
+     reticle.quaternion.identity();reticle.visible=true;
+     break;
+    }
+    if(validHit)break;
    }
   }
   if(!validHit&&now-lastSurfaceHit<trackingGraceMs){
