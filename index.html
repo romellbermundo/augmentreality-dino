@@ -258,7 +258,7 @@ let arrivalStart=-1,portalCloseStart=0;const arrivalDuration=1700;
 const arrivalScale=new THREE.Group();dinosaur.remove(idlePivot);arrivalScale.add(idlePivot);dinosaur.add(arrivalScale);
 let hitTestSource=null,floorHitTestSource=null,referenceSpace=null,surfaceFound=false,lastSurfaceHit=-Infinity,scanStart=0;
 const surfaceTarget=new THREE.Vector3(),candidateSurface=new THREE.Vector3();
-const trackingGraceMs=1100;
+const trackingGraceMs=1100,fastScanMs=850;
 const hitMatrix=new THREE.Matrix4();const placeButton=document.getElementById('place');const tip=document.getElementById('reticle-tip');
 const arButton=ARButton.createButton(renderer,{requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay'],domOverlay:{root:document.getElementById('ui')}});
 document.getElementById('ar-slot').appendChild(arButton);
@@ -283,8 +283,8 @@ renderer.xr.addEventListener('sessionstart',async()=>{
 renderer.xr.addEventListener('sessionend',()=>{document.body.classList.remove('ar-active','ar-placed');scene.background=rainTexture;ground.visible=true;grid.visible=true;controls.enabled=true;dinosaur.visible=true;dinosaur.position.set(0,0,0);reticle.visible=false;arrivalPortal.visible=false;arrivalStart=-1;arrivalScale.scale.setScalar(1);placeButton.disabled=false;placeButton.style.display='';hitTestSource?.cancel();floorHitTestSource?.cancel();hitTestSource=null;floorHitTestSource=null;referenceSpace=null;surfaceFound=false;lastSurfaceHit=-Infinity;placed=false;resetStart=-1;portalOpeningStart=-1;restoreDinoOpacity();reticle.scale.setScalar(1)});
 function placeDinosaur(){
  if(!renderer.xr.isPresenting||!loaded){tip.textContent='The dinosaur is still loading. Please wait.';return}
- if(placed||resetStart>=0||portalOpeningStart>=0||!surfaceFound)return;
- if(surfaceFound&&reticle.visible){dinosaur.position.copy(surfaceTarget)}
+ if(placed||resetStart>=0||portalOpeningStart>=0||(!surfaceFound&&performance.now()-scanStart<fastScanMs))return;
+ if(surfaceFound&&reticle.visible){dinosaur.position.copy(reticle.position)}
  else{
   // Use the same floor-level estimate shown by the portal. Do not
   // recalculate a camera-forward point that can land at desk height.
@@ -338,12 +338,26 @@ renderer.setAnimationLoop((time,frame)=>{
    surfaceFound=true;reticle.visible=true;
   }else if(!validHit){
    surfaceFound=false;
-   reticle.visible=false;
+   if(now-scanStart>=fastScanMs){
+    // Fast mode: clearly identified estimate, never presented as a tracked hit.
+    // Ray toward the visible floor, then clamp to an estimated floor height.
+    const xrCamera=renderer.xr.getCamera();
+    const direction=new THREE.Vector3(0,0,-1).applyQuaternion(xrCamera.quaternion);
+    const floorY=xrCamera.position.y-1.35;
+    const distance=direction.y<-.08
+     ?THREE.MathUtils.clamp((floorY-xrCamera.position.y)/direction.y,.6,4)
+     :2;
+    reticle.position.copy(xrCamera.position).addScaledVector(direction,distance);
+    reticle.position.y=floorY;
+    reticle.quaternion.identity();reticle.visible=true;
+   }else reticle.visible=false;
   }
-  placeButton.disabled=resetStart>=0||portalOpeningStart>=0||!surfaceFound;
-  placeButton.textContent=surfaceFound?'🦖 Place T-Rex':'Scanning…';
+  const fastReady=now-scanStart>=fastScanMs;
+  placeButton.disabled=resetStart>=0||portalOpeningStart>=0||(!surfaceFound&&!fastReady);
+  placeButton.textContent=surfaceFound?'🦖 Place T-Rex':fastReady?'Place (Estimated)':'Scanning…';
   tip.textContent=surfaceFound?'Surface found — tap Place T-Rex':
-   'Scanning for a real surface — move your phone slowly…';
+   fastReady?'Fast mode: estimated floor position; reset if needed.':
+   'Quick scan for a real surface…';
  }
  if(placed||resetStart>=0)reticle.visible=false;
  function animatePortalParticles(portal,clock){const d=portal.userData;for(let i=0;i<d.count;i++){const phase=i*2.399963+clock*.75;const radius=.12+(i%9)/9*.22;const j=i*3;d.positions[j]=Math.cos(phase)*radius;d.positions[j+1]=.04+((clock*.12+i*.073)% .35);d.positions[j+2]=Math.sin(phase)*radius;}d.sparks.geometry.attributes.position.needsUpdate=true}
