@@ -42,6 +42,10 @@ header p{font-size:clamp(.6rem,2.5vw,.7rem);margin:3px 0 0;letter-spacing:.02em;
 #controls #place{background:radial-gradient(ellipse at 30% 0%,#fff5be66,transparent 70%),linear-gradient(180deg,#a99655,#6b6136)!important;color:#fff1c4!important;border-color:#c9b879!important}
 body.ar-placed #controls #place{background:linear-gradient(180deg,#596540,#28361f)!important}
 @media(max-width:420px){#controls button,#ar-slot button{font-size:clamp(.58rem,2.4vw,.8rem)!important;letter-spacing:-.06em!important}#controls{gap:3px!important}}
+
+/* Bright green primary action; override the carved-stone generic button style. */
+#ar-slot button{background:linear-gradient(180deg,#49db76,#168e47)!important;border:2px solid #a3ffc0!important;color:#072c19!important;text-shadow:none!important;box-shadow:inset 0 2px #d8ffe58c,0 4px 14px #0c6b3c77!important}
+#ar-slot button:disabled{filter:saturate(.5);opacity:.55!important}
 </style>
 </head>
 <body>
@@ -145,7 +149,7 @@ function createFallbackRex(){
 }
 let legacyRigUpdate=null;
 const fallback=createFallbackRex();idlePivot.add(fallback);let usingFallback=true;
-function ready(message){loaded=true;applySize();status.textContent=message;document.getElementById('size').disabled=false}
+function ready(message){loaded=true;applySize();status.hidden=true;document.getElementById('size').disabled=false}
 ready('T-Rex ready! Explore in 3D or tap Start AR.');
 const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');materialLoader.load('t-rexaur.mtl',materials=>{
  materials.preload();for(const material of Object.values(materials.materials)){if(material){material.shininess=8;material.specular?.setRGB(.045,.045,.045);material.needsUpdate=true}}const loader=new OBJLoader();loader.setMaterials(materials);loader.load('./assets/psone/t-rexaur.obj',model=>{
@@ -164,7 +168,7 @@ const materialLoader=new MTLLoader();materialLoader.setPath('./assets/psone/');m
   legacyRigUpdate=null;
   const normalized=new THREE.Group();normalized.add(model);normalized.scale.setScalar(BASE_HEIGHT/dims.y);
 legacyRigUpdate=null;
-  restoreDinoOpacity();idlePivot.remove(fallback);idlePivot.add(normalized);usingFallback=false;ready('Original T-Rex model loaded! Tap Start AR to place it.');
+  restoreDinoOpacity();idlePivot.remove(fallback);idlePivot.add(normalized);usingFallback=false;ready('');
  },undefined,error=>{console.warn('Legacy OBJ failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
 },undefined,error=>{console.warn('Legacy materials failed; using built-in dinosaur',error);ready('Dinosaur ready (lightweight model). Tap Start AR to place it.');});
 
