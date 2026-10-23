@@ -163,11 +163,12 @@ augmentreality-dino/
 │       ├── t-rexaur.obj
 │       ├── t-rexaur.mtl
 │       └── ffdtex*.png
-├── package.json
-└── README.md
+├── README.md
+├── LICENSE
+└── .gitignore
 ```
 
-The current interface and rendering logic live in `index.html`. The `assets/psone/` directory contains the legacy dinosaur model and its materials. The repository also retains older experimental assets that are no longer central to the new experience.
+The current interface and rendering logic live in `index.html`. Only the original dinosaur OBJ, its MTL material file, and three referenced textures remain in `assets/psone/`. Legacy demos, unrelated assets, and obsolete A-Frame development dependencies have been removed.
 
 ---
 
@@ -227,6 +228,12 @@ The interface is designed as a quiet frame around the dinosaur: deep forest tone
 ---
 
 ## 🏷️ Version History
+
+### v2.1.1 — Repository cleanup
+
+- Removed 175 unused legacy files (approximately 92 MB of assets and old demos) from the current repository tree.
+- Retained the live Three.js application, original T-Rexaur OBJ/MTL and all three required textures.
+- Removed obsolete A-Frame demo pages and development packages; historical files remain recoverable through Git history.
 
 ### v2.1.0 — Portal animations and dual rotation
 
