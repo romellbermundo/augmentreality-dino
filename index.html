@@ -93,11 +93,11 @@ const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.01,150);came
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.xr.enabled=true;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.92;stage.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xd9e1d2,0x52584b,1.35));const sun=new THREE.DirectionalLight(0xffedcf,1.25);sun.position.set(5,11,7);scene.add(sun);
 // Dedicated soft fill brightens the dinosaur by roughly 20% without changing the Matrix backdrop or grid.
-const dinosaurFill=new THREE.HemisphereLight(0xffffff,0x75816c,.28);dinosaur.add(dinosaurFill);
 const ground=new THREE.Mesh(new THREE.CircleGeometry(15,80),new THREE.MeshStandardMaterial({color:0x2a4235,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.03;scene.add(ground);
 const grid=new THREE.GridHelper(30,30,0x65816b,0x385447);grid.position.y=-.02;scene.add(grid);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1.8,0);controls.enableDamping=true;controls.maxDistance=35;controls.minDistance=3;controls.maxPolarAngle=Math.PI*.49;controls.update();
 const dinosaur=new THREE.Group();scene.add(dinosaur);
+const dinosaurFill=new THREE.HemisphereLight(0xffffff,0x75816c,.28);dinosaur.add(dinosaurFill);
 const idlePivot=new THREE.Group();dinosaur.add(idlePivot);
 let loaded=false,mini=true,placed=false;const BASE_HEIGHT=4.1;
 // Preserve the reference screenshot's initial left-facing dinosaur view.
